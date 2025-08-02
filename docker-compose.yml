@@ -1,0 +1,157 @@
+# Docker Compose configuration for Explainable-MoE-Debugger development
+# This is a template for future implementation
+
+version: '3.8'
+
+services:
+  # Backend API service
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+      target: development
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - model_cache:/app/models
+      - debug_data:/app/debug_data
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=debug
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://debugger:password@postgres:5432/moe_debugger
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - moe_network
+    # GPU support (uncomment for CUDA)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Frontend development server
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_WS_URL=ws://localhost:8000/ws
+    depends_on:
+      - backend
+    networks:
+      - moe_network
+
+  # Redis for caching and real-time data
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - moe_network
+    command: redis-server --appendonly yes
+
+  # PostgreSQL for persistent storage
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=moe_debugger
+      - POSTGRES_USER=debugger
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - moe_network
+
+  # Nginx reverse proxy (for production-like setup)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - moe_network
+    profiles:
+      - production
+
+  # Monitoring with Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - moe_network
+    profiles:
+      - monitoring
+
+  # Grafana for metrics visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - moe_network
+    profiles:
+      - monitoring
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  model_cache:
+  debug_data:
+
+networks:
+  moe_network:
+    driver: bridge
+
+# Development overrides
+# Create docker-compose.override.yml for local customizations:
+#
+# version: '3.8'
+# services:
+#   backend:
+#     environment:
+#       - CUSTOM_ENV_VAR=value
+#     volumes:
+#       - /path/to/local/models:/app/models
+#
+#   frontend:
+#     environment:
+#       - REACT_APP_DEBUG=true

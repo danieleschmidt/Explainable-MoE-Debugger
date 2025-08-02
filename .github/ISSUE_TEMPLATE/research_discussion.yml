@@ -1,0 +1,236 @@
+name: Research Discussion
+description: Discuss research ideas, technical approaches, or architectural decisions
+title: "[RESEARCH] "
+labels: ["research", "discussion"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to discuss research ideas, propose technical approaches, or debate architectural decisions for the MoE debugging platform.
+
+  - type: dropdown
+    id: research_type
+    attributes:
+      label: Research Type
+      description: What type of research discussion is this?
+      options:
+        - Technical Approach
+        - Architecture Decision
+        - Algorithm Design
+        - Performance Analysis
+        - Literature Review
+        - Experimental Results
+        - Tool Comparison
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: background
+    attributes:
+      label: Background & Context
+      description: Provide background information and context for this research discussion.
+      placeholder: |
+        - Current state of the problem
+        - Relevant literature or existing work
+        - Why this research is important
+    validations:
+      required: true
+
+  - type: textarea
+    id: research_question
+    attributes:
+      label: Research Question/Problem
+      description: What specific question or problem are you addressing?
+      placeholder: |
+        Core question: How can we...?
+        
+        Specific problems:
+        - Problem 1: ...
+        - Problem 2: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_approach
+    attributes:
+      label: Proposed Approach
+      description: Describe your proposed technical approach or solution.
+      placeholder: |
+        Approach overview:
+        
+        Technical details:
+        - Method 1: ...
+        - Method 2: ...
+        
+        Implementation considerations:
+        - ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Approaches
+      description: What other approaches have you considered? What are their trade-offs?
+      placeholder: |
+        Alternative 1:
+        - Pros: ...
+        - Cons: ...
+        
+        Alternative 2:
+        - Pros: ...
+        - Cons: ...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: moe_area
+    attributes:
+      label: MoE Research Area
+      description: Which aspect of MoE debugging does this relate to?
+      options:
+        - Expert Routing Analysis
+        - Load Balancing
+        - Token Attribution
+        - Performance Profiling
+        - Dead Expert Detection
+        - Visualization Techniques
+        - Real-time Processing
+        - Multi-framework Support
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical_details
+    attributes:
+      label: Technical Details
+      description: Provide technical specifications, algorithms, or implementation details.
+      render: markdown
+      placeholder: |
+        ## Algorithm/Method
+        
+        ```python
+        # Pseudocode or actual code
+        def proposed_method():
+            pass
+        ```
+        
+        ## Mathematical formulation
+        
+        ```
+        Key equations or formulas
+        ```
+        
+        ## Data structures
+        
+        - Structure 1: ...
+        - Structure 2: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: evaluation
+    attributes:
+      label: Evaluation Criteria
+      description: How should we evaluate the success of this approach?
+      placeholder: |
+        Performance metrics:
+        - Metric 1: ...
+        - Metric 2: ...
+        
+        Experimental design:
+        - Test case 1: ...
+        - Test case 2: ...
+        
+        Success criteria:
+        - Requirement 1: ...
+        - Requirement 2: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: related_work
+    attributes:
+      label: Related Work & References
+      description: Cite relevant papers, tools, or prior work.
+      placeholder: |
+        Academic papers:
+        - [Paper 1](link): Brief description
+        - [Paper 2](link): Brief description
+        
+        Existing tools:
+        - Tool 1: How it relates
+        - Tool 2: How it relates
+        
+        Open source projects:
+        - Project 1: Relevant features
+        - Project 2: Relevant features
+    validations:
+      required: false
+
+  - type: textarea
+    id: implementation_plan
+    attributes:
+      label: Implementation Plan
+      description: If applicable, outline how this could be implemented.
+      placeholder: |
+        Phase 1: Research & prototyping
+        - Task 1: ...
+        - Task 2: ...
+        
+        Phase 2: Implementation
+        - Task 1: ...
+        - Task 2: ...
+        
+        Phase 3: Testing & validation
+        - Task 1: ...
+        - Task 2: ...
+        
+        Dependencies:
+        - Dependency 1: ...
+        - Dependency 2: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: open_questions
+    attributes:
+      label: Open Questions
+      description: What questions or challenges remain unresolved?
+      placeholder: |
+        - Question 1: How should we handle...?
+        - Question 2: What's the best way to...?
+        - Challenge 1: We need to solve...
+        - Challenge 2: It's unclear how to...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: collaboration
+    attributes:
+      label: Collaboration Interest
+      description: Are you looking for collaborators on this research?
+      options:
+        - Yes, seeking active collaborators
+        - Yes, open to collaboration
+        - Looking for feedback only
+        - Independent research
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues and discussions for related topics
+          required: true
+        - label: I have provided sufficient technical detail for meaningful discussion
+          required: true
+        - label: I am open to feedback and alternative approaches
+          required: true

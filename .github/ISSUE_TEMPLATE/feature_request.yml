@@ -1,0 +1,160 @@
+name: Feature Request
+description: Suggest an idea for improving the Explainable-MoE-Debugger
+title: "[FEATURE] "
+labels: ["enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please fill out this form to help us understand your request.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem? Please describe.
+      placeholder: I'm always frustrated when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see implemented.
+      placeholder: I would like to see...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Describe any alternative solutions or features you've considered.
+      placeholder: Other approaches could be...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: Which area does this feature relate to?
+      options:
+        - Visualization/UI
+        - Model Analysis
+        - Performance Profiling
+        - Framework Integration
+        - API/Developer Experience
+        - Documentation
+        - Security
+        - Deployment/DevOps
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Critical (Blocking current work)
+        - High (Would significantly improve workflow)
+        - Medium (Would be nice to have)
+        - Low (Minor improvement)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: user_type
+    attributes:
+      label: User Type
+      description: What type of user would benefit from this feature?
+      options:
+        - ML Researcher
+        - ML Engineer
+        - Platform Engineer
+        - Data Scientist
+        - All Users
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use Case
+      description: Describe a specific use case or scenario where this feature would be helpful.
+      placeholder: |
+        As a [user type], I want to [action] so that I can [benefit].
+        
+        Scenario:
+        1. When I am [doing something]...
+        2. I need to [accomplish task]...
+        3. This feature would help by [specific benefit]...
+    validations:
+      required: true
+
+  - type: textarea
+    id: mockup
+    attributes:
+      label: Mockup/Design Ideas
+      description: If you have any UI mockups, diagrams, or design ideas, please describe or link them here.
+    validations:
+      required: false
+
+  - type: textarea
+    id: technical_considerations
+    attributes:
+      label: Technical Considerations
+      description: Are there any technical aspects, limitations, or requirements we should consider?
+      placeholder: |
+        - Performance requirements
+        - Compatibility considerations
+        - Security implications
+        - Dependencies
+    validations:
+      required: false
+
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Implementation Contribution
+      description: Would you be interested in contributing to the implementation?
+      options:
+        - Yes, I can implement this feature
+        - Yes, I can help with implementation
+        - Yes, I can help with testing
+        - No, but I can provide feedback
+        - No contribution planned
+    validations:
+      required: false
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Any relevant links, papers, or examples that relate to this feature request.
+      placeholder: |
+        - Similar features in other tools
+        - Research papers
+        - Documentation links
+        - Example implementations
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to ensure this feature hasn't been requested
+          required: true
+        - label: I have provided sufficient detail about the proposed feature
+          required: true
+        - label: I understand this is an open source project and implementation depends on community contributions
+          required: true
