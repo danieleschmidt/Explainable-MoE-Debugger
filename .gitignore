@@ -205,3 +205,80 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project-specific: Explainable-MoE-Debugger
+# ML Model files
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.pb
+*.onnx
+*.tflite
+
+# MoE Debugging artifacts
+debug_sessions/
+profiling_data/
+visualization_cache/
+model_hooks_cache/
+temp_analysis/
+routing_traces/
+expert_stats/
+
+# Configuration overrides
+config.local.yaml
+config.local.json
+.env.local
+.env.production.local
+.env.development.local
+
+# Runtime data
+run/
+tmp/
+temp/
+.tmp/
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/out/
+
+# Security
+secrets/
+keys/
+certificates/
+*.pem
+*.key
+*.crt
+*.csr
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Testing artifacts
+test-results/
+screenshots/
+videos/
+reports/
+coverage/
+
+# IDE specific
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

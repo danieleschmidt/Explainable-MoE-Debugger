@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 GitHub Discussions
+    url: https://github.com/danieleschmidt/Explainable-MoE-Debugger/discussions
+    about: Ask questions, share ideas, and discuss the project with the community
+  - name: 💬 Discord Community
+    url: https://discord.gg/explainable-moe
+    about: Join our Discord server for real-time discussions (coming soon)
+  - name: 🔒 Security Issues
+    url: https://github.com/danieleschmidt/Explainable-MoE-Debugger/security/advisories/new
+    about: Report security vulnerabilities privately
+  - name: 📖 Documentation
+    url: https://github.com/danieleschmidt/Explainable-MoE-Debugger/blob/main/README.md
+    about: Read the project documentation and guides
