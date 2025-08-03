@@ -1,0 +1,58 @@
+{
+    "name": "Explainable MoE Debugger",
+    "image": "mcr.microsoft.com/devcontainers/python:3.11",
+    
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "18"
+        },
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers/features/git:1": {}
+    },
+    
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.pylint",
+                "ms-python.black-formatter",
+                "ms-python.mypy-type-checker",
+                "bradlc.vscode-tailwindcss",
+                "esbenp.prettier-vscode",
+                "ms-vscode.vscode-typescript-next",
+                "ms-toolsai.jupyter",
+                "ms-toolsai.vscode-jupyter-cell-tags",
+                "charliermarsh.ruff",
+                "tamasfe.even-better-toml"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.linting.enabled": true,
+                "python.linting.pylintEnabled": false,
+                "python.linting.mypyEnabled": true,
+                "python.formatting.provider": "black",
+                "python.formatting.blackArgs": ["--line-length=88"],
+                "editor.formatOnSave": true,
+                "editor.codeActionsOnSave": {
+                    "source.organizeImports": true
+                },
+                "files.associations": {
+                    "*.py": "python"
+                }
+            }
+        }
+    },
+    
+    "forwardPorts": [8080, 3000, 8888],
+    
+    "postCreateCommand": "pip install -e .[dev] && npm install -g typescript @types/node",
+    
+    "remoteUser": "vscode",
+    
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+    "workspaceFolder": "/workspace",
+    
+    "mounts": [
+        "source=${localWorkspaceFolder}/.git,target=/workspace/.git,type=bind,consistency=cached"
+    ]
+}

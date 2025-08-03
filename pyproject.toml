@@ -87,8 +87,15 @@ huggingface = [
     "transformers>=4.30.0",
     "tokenizers>=0.13.0",
 ]
+database = [
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.12.0",
+]
+cache = [
+    "redis>=4.5.0",
+]
 all = [
-    "explainable-moe-debugger[dev,jax,tensorflow]",
+    "explainable-moe-debugger[dev,jax,tensorflow,huggingface,database,cache]",
 ]
 
 [project.urls]
