@@ -4,16 +4,31 @@ This package provides real-time visualization and analysis tools for understandi
 expert routing, load balancing, and token attribution in MoE architectures.
 """
 
-from moe_debugger.__about__ import __version__
-from moe_debugger.debugger import MoEDebugger
-from moe_debugger.analyzer import MoEAnalyzer
-from moe_debugger.profiler import MoEProfiler
-from moe_debugger.server import DebugServer
+from .__about__ import __version__
 
-__all__ = [
-    "__version__",
-    "MoEDebugger",
-    "MoEAnalyzer", 
-    "MoEProfiler",
-    "DebugServer",
-]
+# Conditional imports to handle missing dependencies gracefully
+__all__ = ["__version__"]
+
+try:
+    from .debugger import MoEDebugger
+    __all__.append("MoEDebugger")
+except ImportError:
+    pass
+
+try:
+    from .analyzer import MoEAnalyzer  
+    __all__.append("MoEAnalyzer")
+except ImportError:
+    pass
+
+try:
+    from .profiler import MoEProfiler
+    __all__.append("MoEProfiler")
+except ImportError:
+    pass
+
+try:
+    from .server import DebugServer
+    __all__.append("DebugServer")
+except ImportError:
+    pass

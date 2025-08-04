@@ -13,12 +13,20 @@ try:
 except ImportError:
     TORCH_AVAILABLE = False
 
-from .debugger import MoEDebugger
-from .server import DebugServer
+# Import these only when available  
+try:
+    from .debugger import MoEDebugger
+    from .server import DebugServer
+    COMPONENTS_AVAILABLE = True
+except ImportError:
+    MoEDebugger = None
+    DebugServer = None
+    COMPONENTS_AVAILABLE = False
+
 from .__about__ import __version__
 
 
-def load_model(model_path: str, model_type: str = "auto") -> Optional[nn.Module]:
+def load_model(model_path: str, model_type: str = "auto") -> Optional[Any]:
     """Load a model for debugging."""
     if not TORCH_AVAILABLE:
         print("PyTorch not available. Please install PyTorch to use the debugger.")
@@ -299,7 +307,7 @@ def main():
     
     # Create debugger
     debugger = None
-    if model:
+    if model and COMPONENTS_AVAILABLE and MoEDebugger:
         debugger = MoEDebugger(model, config)
         print(f"Created debugger for model: {model.__class__.__name__}")
         
@@ -319,7 +327,11 @@ def main():
             run_interactive_mode(debugger)
     else:
         # Start web server
-        server = DebugServer(debugger, host=args.host, port=args.port)
+        if COMPONENTS_AVAILABLE and DebugServer:
+            server = DebugServer(debugger, host=args.host, port=args.port)
+        else:
+            print("Server components not available")
+            return
         print(f"\n🚀 Starting MoE Debugger server...")
         print(f"📱 Web interface: http://{args.host}:{args.port}")
         print(f"🔗 WebSocket endpoint: ws://{args.host}:{args.port}/ws")

@@ -79,8 +79,8 @@ class DebugSession:
     
     session_id: str
     model_name: str
-    start_time: datetime
-    end_time: Optional[datetime]
+    start_time: float  # Changed from datetime to float for simplicity
+    end_time: Optional[float] = None  # Changed from datetime to float 
     routing_events: List[RoutingEvent] = field(default_factory=list)
     expert_metrics: Dict[int, ExpertMetrics] = field(default_factory=dict)
     performance_profiles: List[PerformanceProfile] = field(default_factory=list)
