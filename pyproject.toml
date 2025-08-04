@@ -34,29 +34,24 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    # Core ML frameworks (will be added during implementation)
-    # "torch>=2.0.0",
-    # "transformers>=4.30.0",
-    # "numpy>=1.21.0",
+    # Core ML frameworks
+    "torch>=2.0.0",
+    "numpy>=1.21.0",
     
     # Backend web framework
-    # "fastapi>=0.100.0",
-    # "uvicorn[standard]>=0.20.0",
-    # "websockets>=11.0.0",
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.20.0",
+    "websockets>=11.0.0",
     
     # Data processing and analysis
-    # "pandas>=1.5.0",
-    # "scipy>=1.9.0",
+    "pandas>=1.5.0",
+    "scipy>=1.9.0",
     
-    # Visualization and plotting
-    # "plotly>=5.14.0",
-    # "matplotlib>=3.6.0",
+    # System monitoring
+    "psutil>=5.9.0",
     
     # Configuration and utilities
-    # "pydantic>=2.0.0",
-    # "click>=8.1.0",
-    # "rich>=13.0.0",
-    # "structlog>=23.0.0",
+    "pydantic>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -82,14 +77,25 @@ dev = [
     "jupyter>=1.0.0",
 ]
 jax = [
-    # "jax[cpu]>=0.4.1",
-    # "flax>=0.7.0",
+    "jax[cpu]>=0.4.1",
+    "flax>=0.7.0",
 ]
 tensorflow = [
-    # "tensorflow>=2.13.0",
+    "tensorflow>=2.13.0",
+]
+huggingface = [
+    "transformers>=4.30.0",
+    "tokenizers>=0.13.0",
+]
+database = [
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.12.0",
+]
+cache = [
+    "redis>=4.5.0",
 ]
 all = [
-    "explainable-moe-debugger[dev,jax,tensorflow]",
+    "explainable-moe-debugger[dev,jax,tensorflow,huggingface,database,cache]",
 ]
 
 [project.urls]

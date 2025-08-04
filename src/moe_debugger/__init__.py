@@ -5,5 +5,15 @@ expert routing, load balancing, and token attribution in MoE architectures.
 """
 
 from moe_debugger.__about__ import __version__
+from moe_debugger.debugger import MoEDebugger
+from moe_debugger.analyzer import MoEAnalyzer
+from moe_debugger.profiler import MoEProfiler
+from moe_debugger.server import DebugServer
 
-__all__ = ["__version__"]
+__all__ = [
+    "__version__",
+    "MoEDebugger",
+    "MoEAnalyzer", 
+    "MoEProfiler",
+    "DebugServer",
+]
