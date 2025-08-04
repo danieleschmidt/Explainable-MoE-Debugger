@@ -1,0 +1,39 @@
+# Core dependencies for MoE Debugger
+numpy>=1.24.0
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+websockets>=11.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Optional dependencies (install with specific extras)
+# Deep learning frameworks
+torch>=2.0.0; extra == "torch"
+transformers>=4.30.0; extra == "torch"
+
+# Data processing
+pandas>=2.0.0; extra == "data"
+scipy>=1.10.0; extra == "data"
+
+# Caching and storage
+redis>=5.0.0; extra == "redis"
+sqlalchemy>=2.0.0; extra == "database"
+psycopg2-binary>=2.9.0; extra == "database"
+
+# Monitoring and logging
+prometheus-client>=0.17.0; extra == "monitoring"
+
+# Development and testing
+pytest>=7.4.0; extra == "dev"
+pytest-asyncio>=0.21.0; extra == "dev"
+pytest-cov>=4.1.0; extra == "dev"
+black>=23.7.0; extra == "dev"
+flake8>=6.0.0; extra == "dev"
+mypy>=1.5.0; extra == "dev"
+
+# Security
+cryptography>=41.0.0; extra == "security"
+
+# Web and API
+jinja2>=3.1.0
+aiofiles>=23.0.0

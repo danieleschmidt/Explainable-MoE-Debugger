@@ -1,42 +1,35 @@
-# Docker Compose configuration for Explainable-MoE-Debugger development
-# This is a template for future implementation
-
+# Docker Compose for MoE Debugger Production Deployment
 version: '3.8'
 
 services:
-  # Backend API service
-  backend:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.backend
-      target: development
+  # MoE Debugger Main Service
+  moe-debugger:
+    build: .
     ports:
-      - "8000:8000"
-    volumes:
-      - ./src:/app/src
-      - ./config:/app/config
-      - model_cache:/app/models
-      - debug_data:/app/debug_data
+      - "8080:8080"
     environment:
-      - ENVIRONMENT=development
-      - LOG_LEVEL=debug
+      - MOE_DEBUG_LOG_LEVEL=INFO
+      - MOE_DEBUG_HOST=0.0.0.0
+      - MOE_DEBUG_PORT=8080
+      - MOE_DEBUG_MEMORY_LIMIT=4096
       - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://debugger:password@postgres:5432/moe_debugger
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./cache:/app/cache
     depends_on:
       - redis
-      - postgres
+    restart: unless-stopped
     networks:
-      - moe_network
-    # GPU support (uncomment for CUDA)
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+      - moe-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  # Frontend development server
+  # Frontend service (keep existing if needed)
   frontend:
     build:
       context: ./frontend
@@ -47,13 +40,13 @@ services:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
     environment:
-      - NODE_ENV=development
-      - REACT_APP_API_URL=http://localhost:8000
-      - REACT_APP_WS_URL=ws://localhost:8000/ws
+      - NODE_ENV=production
+      - REACT_APP_API_URL=http://localhost:8080
+      - REACT_APP_WS_URL=ws://localhost:8080/ws
     depends_on:
-      - backend
+      - moe-debugger
     networks:
-      - moe_network
+      - moe-network
 
   # Redis for caching and real-time data
   redis:
@@ -63,23 +56,13 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - moe_network
+      - moe-network
     command: redis-server --appendonly yes
-
-  # PostgreSQL for persistent storage
-  postgres:
-    image: postgres:15-alpine
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_DB=moe_debugger
-      - POSTGRES_USER=debugger
-      - POSTGRES_PASSWORD=password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - moe_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Nginx reverse proxy (for production-like setup)
   nginx:
@@ -88,15 +71,13 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./docker/nginx/ssl:/etc/nginx/ssl
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
     depends_on:
-      - backend
-      - frontend
+      - moe-debugger
+    restart: unless-stopped
     networks:
-      - moe_network
-    profiles:
-      - production
+      - moe-network
 
   # Monitoring with Prometheus (optional)
   prometheus:
@@ -138,7 +119,7 @@ volumes:
   debug_data:
 
 networks:
-  moe_network:
+  moe-network:
     driver: bridge
 
 # Development overrides

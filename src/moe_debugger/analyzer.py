@@ -1,11 +1,19 @@
 """Analysis engine for MoE debugging with statistical and behavioral analysis."""
 
-import torch
 import numpy as np
 from typing import Dict, List, Optional, Any, Tuple
 from collections import defaultdict, Counter
 import math
 import warnings
+
+# Try to import torch, fall back to mock if not available
+try:
+    import torch
+    import torch.nn as nn
+    TORCH_AVAILABLE = True
+except ImportError:
+    from .mock_torch import torch, nn
+    TORCH_AVAILABLE = False
 
 from .models import (
     RoutingEvent, LoadBalanceMetrics, TokenAttribution, 
@@ -16,7 +24,7 @@ from .models import (
 class MoEAnalyzer:
     """Core analysis algorithms for MoE debugging and optimization."""
     
-    def __init__(self, model: torch.nn.Module):
+    def __init__(self, model: Optional[nn.Module] = None):
         self.model = model
         self.cache = {}
         self.analysis_history = []
@@ -78,7 +86,7 @@ class MoEAnalyzer:
     def detect_dead_experts(self, routing_events: List[RoutingEvent], 
                            threshold: int = 10) -> List[int]:
         """Detect experts that are never or rarely activated."""
-        if not routing_events:
+        if not routing_events or routing_events is None:
             return []
         
         expert_counts = defaultdict(int)
@@ -205,6 +213,9 @@ class MoEAnalyzer:
         """Compute pairwise similarity between experts."""
         similarities = {}
         
+        if not self.model or not TORCH_AVAILABLE:
+            return similarities
+        
         # Extract expert parameters
         expert_params = self._extract_expert_parameters()
         
@@ -228,15 +239,21 @@ class MoEAnalyzer:
         
         return similarities
     
-    def _extract_expert_parameters(self) -> Dict[int, List[torch.Tensor]]:
+    def _extract_expert_parameters(self) -> Dict[int, List]:
         """Extract parameters for each expert."""
         expert_params = defaultdict(list)
+        
+        if not self.model:
+            return dict(expert_params)
         
         for name, param in self.model.named_parameters():
             if "expert" in name.lower():
                 # Extract expert ID from parameter name
                 expert_id = self._extract_expert_id(name)
-                expert_params[expert_id].append(param.detach())
+                if hasattr(param, 'detach'):
+                    expert_params[expert_id].append(param.detach())
+                else:
+                    expert_params[expert_id].append(param)
         
         return dict(expert_params)
     

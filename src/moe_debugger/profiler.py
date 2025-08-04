@@ -1,14 +1,26 @@
 """Performance profiling engine for MoE models."""
 
-import torch
 import time
 import threading
-import psutil
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
 import gc
 from typing import Dict, List, Optional, Any
 from collections import defaultdict, deque
 from contextlib import contextmanager
 import numpy as np
+
+# Try to import torch, fall back to mock if not available
+try:
+    import torch
+    import torch.nn as nn
+    TORCH_AVAILABLE = True
+except ImportError:
+    from .mock_torch import torch, nn
+    TORCH_AVAILABLE = False
 
 from .models import PerformanceProfile
 
@@ -60,7 +72,7 @@ class MoEProfiler:
             self.monitor_thread.start()
             
             # Reset CUDA memory stats if available
-            if torch.cuda.is_available():
+            if TORCH_AVAILABLE and torch.cuda.is_available():
                 torch.cuda.reset_peak_memory_stats()
     
     def stop_profiling(self):
@@ -83,11 +95,13 @@ class MoEProfiler:
         while not self.stop_monitoring.wait(0.1):  # Check every 100ms
             try:
                 # System memory
-                system_memory = psutil.virtual_memory().used / (1024 * 1024)  # MB
+                system_memory = 0
+                if PSUTIL_AVAILABLE:
+                    system_memory = psutil.virtual_memory().used / (1024 * 1024)  # MB
                 
                 # GPU memory if available
                 gpu_memory = 0
-                if torch.cuda.is_available():
+                if TORCH_AVAILABLE and torch.cuda.is_available():
                     gpu_memory = torch.cuda.memory_allocated() / (1024 * 1024)  # MB
                     self.peak_memory = max(self.peak_memory, gpu_memory)
                 
@@ -189,9 +203,12 @@ class MoEProfiler:
     
     def _get_current_memory(self) -> float:
         """Get current memory usage in MB."""
-        if torch.cuda.is_available():
+        if TORCH_AVAILABLE and torch.cuda.is_available():
             return torch.cuda.memory_allocated() / (1024 * 1024)
-        return psutil.virtual_memory().used / (1024 * 1024)
+        elif PSUTIL_AVAILABLE:
+            return psutil.virtual_memory().used / (1024 * 1024)
+        else:
+            return 0.0  # Fallback if no memory monitoring available
     
     def _create_profile(self) -> PerformanceProfile:
         """Create a performance profile from collected data."""
