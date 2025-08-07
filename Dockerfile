@@ -1,10 +1,24 @@
-# Production Dockerfile for MoE Debugger
+# Multi-stage Production Dockerfile for MoE Debugger
+# Stage 1: Build frontend
+FROM node:18-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy frontend package files
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm ci --only=production
+
+# Copy frontend source
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 2: Python backend with built frontend
 FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including Node.js for frontend serving
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
@@ -17,9 +31,14 @@ RUN groupadd -r moe && useradd -r -g moe moe
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy built frontend from previous stage
+COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
+COPY --from=frontend-builder /app/frontend/public ./frontend/public
+COPY --from=frontend-builder /app/frontend/package.json ./frontend/package.json
+
 # Copy source code
 COPY src/ ./src/
-COPY setup.py ./
+COPY pyproject.toml ./
 COPY README.md ./
 COPY LICENSE ./
 

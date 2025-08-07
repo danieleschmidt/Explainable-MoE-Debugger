@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-devtools-background text-devtools-text font-mono;
+    font-feature-settings: "liga" off, "calt" off;
+  }
+}
+
+@layer components {
+  /* Chrome DevTools-inspired components */
+  .devtools-panel {
+    @apply bg-devtools-surface border border-devtools-border rounded-lg shadow-lg;
+  }
+  
+  .devtools-tab {
+    @apply px-3 py-2 text-sm bg-devtools-background border-b-2 border-transparent;
+    @apply hover:bg-devtools-surface hover:text-devtools-text;
+    @apply focus:outline-none focus:bg-devtools-surface;
+  }
+  
+  .devtools-tab.active {
+    @apply border-devtools-accent text-devtools-accent bg-devtools-surface;
+  }
+  
+  .devtools-input {
+    @apply bg-devtools-background border border-devtools-border rounded px-3 py-2;
+    @apply text-devtools-text placeholder-devtools-textSecondary;
+    @apply focus:outline-none focus:border-devtools-accent;
+  }
+  
+  .devtools-button {
+    @apply bg-devtools-accent text-white px-4 py-2 rounded font-medium;
+    @apply hover:bg-opacity-90 transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-devtools-accent focus:ring-opacity-50;
+  }
+  
+  .devtools-button-secondary {
+    @apply bg-devtools-surface text-devtools-text border border-devtools-border px-4 py-2 rounded;
+    @apply hover:bg-devtools-background transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-devtools-border;
+  }
+
+  /* Expert routing visualization styles */
+  .expert-node {
+    @apply transition-all duration-300 cursor-pointer;
+  }
+  
+  .expert-node:hover {
+    @apply scale-110;
+  }
+  
+  .routing-line {
+    @apply transition-all duration-500;
+    stroke-dasharray: 5,5;
+    animation: routing-flow 2s linear infinite;
+  }
+  
+  @keyframes routing-flow {
+    from {
+      stroke-dashoffset: 0;
+    }
+    to {
+      stroke-dashoffset: 20;
+    }
+  }
+  
+  /* Token attribution heatmap */
+  .token-cell {
+    @apply transition-all duration-200 cursor-pointer;
+  }
+  
+  .token-cell:hover {
+    @apply ring-2 ring-devtools-accent ring-opacity-50;
+  }
+  
+  /* Performance metrics */
+  .metric-card {
+    @apply bg-devtools-surface p-4 rounded-lg border border-devtools-border;
+    @apply transition-all duration-200 hover:border-devtools-accent;
+  }
+  
+  /* Scrollbars */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #3c3c3c #1e1e1e;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #1e1e1e;
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #3c3c3c;
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #4c4c4c;
+  }
+}

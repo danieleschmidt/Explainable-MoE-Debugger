@@ -10,14 +10,16 @@ import uuid
 class RoutingEvent:
     """Represents a single expert routing decision during model inference."""
     
-    timestamp: float
-    layer_idx: int
-    token_position: int
-    token: str
-    expert_weights: List[float]
-    selected_experts: List[int]
-    routing_confidence: float
-    sequence_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+    session_id: str = ""
+    layer_idx: int = 0
+    token_idx: int = 0
+    token_text: str = ""
+    selected_experts: List[int] = field(default_factory=list)
+    routing_weights: List[float] = field(default_factory=list)
+    confidence_scores: List[float] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -26,81 +28,94 @@ class ExpertMetrics:
     
     expert_id: int
     layer_idx: int
-    utilization_rate: float
-    compute_time_ms: float
-    memory_usage_mb: float
-    parameter_count: int
-    activation_count: int = 0
-    last_activated: Optional[datetime] = None
+    total_tokens_processed: int = 0
+    average_confidence: float = 0.0
+    activation_frequency: float = 0.0
+    weight_magnitude: float = 0.0
+    gradient_norm: Optional[float] = None
+    last_active_timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+
+
+@dataclass  
+class LoadBalanceMetrics:
+    """Load balancing metrics across experts."""
+    
+    layer_idx: int
+    expert_loads: List[int]
+    load_variance: float
+    coefficient_of_variation: float
+    fairness_index: float
+    dead_experts: List[int]
+    overloaded_experts: List[int]
+    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
 
 
 @dataclass
 class TokenAttribution:
     """Attribution scores showing how tokens influence expert selection."""
     
-    token: str
-    position: int
-    expert_contributions: Dict[int, float]
-    attention_weights: List[float]
-    gradient_norm: float
-    sequence_id: str
+    token_text: str
+    token_idx: int
+    expert_attributions: Dict[int, float]
+    total_attribution: float
+    layer_attributions: Dict[int, float]
 
 
 @dataclass
-class PerformanceProfile:
-    """Complete performance profile for a model inference run."""
+class DiagnosticResult:
+    """Result of a diagnostic analysis (e.g., dead expert detection)."""
     
-    total_inference_time_ms: float
+    diagnostic_type: str
+    severity: str  # "info", "warning", "error"
+    title: str
+    description: str
+    affected_layers: List[int]
+    affected_experts: List[int]
+    recommendations: List[str]
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+
+
+@dataclass
+class PerformanceMetrics:
+    """Performance metrics for model inference."""
+    
+    session_id: str
+    timestamp: str
+    inference_time_ms: float
     routing_overhead_ms: float
-    expert_compute_times: Dict[int, float]
-    memory_peak_mb: float
+    memory_usage_mb: float
     cache_hit_rate: float
-    token_throughput: float
-    timestamp: datetime = field(default_factory=datetime.now)
+    experts_activated: int
+    tokens_processed: int
+    throughput_tokens_per_sec: float
 
 
 @dataclass
-class LoadBalanceMetrics:
-    """Load balancing analysis results for expert utilization."""
+class SessionInfo:
+    """Information about a debugging session."""
     
-    expert_loads: List[float]
-    fairness_index: float  # Jain's fairness index
-    max_load: float
-    min_load: float
-    coefficient_of_variation: float
-    dead_experts: List[int]
-    overloaded_experts: List[int]
+    session_id: str
+    model_name: str
+    model_architecture: str
+    num_experts: int
+    num_layers: int
+    created_at: str
+    last_active: str
     total_tokens_processed: int
+    status: str  # "active", "paused", "completed"
 
 
 @dataclass
 class DebugSession:
-    """Represents a complete debugging session with all collected data."""
+    """Complete debugging session with all collected data."""
     
-    session_id: str
-    model_name: str
-    start_time: float  # Changed from datetime to float for simplicity
-    end_time: Optional[float] = None  # Changed from datetime to float 
+    session_info: SessionInfo
     routing_events: List[RoutingEvent] = field(default_factory=list)
-    expert_metrics: Dict[int, ExpertMetrics] = field(default_factory=dict)
-    performance_profiles: List[PerformanceProfile] = field(default_factory=list)
-    load_balance_metrics: Optional[LoadBalanceMetrics] = None
-    config: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class ModelArchitecture:
-    """Describes the architecture of a MoE model for visualization."""
-    
-    num_layers: int
-    num_experts_per_layer: int
-    hidden_size: int
-    intermediate_size: int
-    vocab_size: int
-    max_sequence_length: int
-    expert_capacity: float
-    router_type: str = "top_k"
-    expert_types: Dict[int, str] = field(default_factory=dict)
+    expert_metrics: List[ExpertMetrics] = field(default_factory=list)
+    load_balance_metrics: List[LoadBalanceMetrics] = field(default_factory=list)
+    diagnostics: List[DiagnosticResult] = field(default_factory=list)
+    performance_metrics: List[PerformanceMetrics] = field(default_factory=list)
 
 
 @dataclass
@@ -113,19 +128,6 @@ class VisualizationData:
     performance_timeline: List[Dict[str, Any]]
     load_balance_chart: Dict[str, Any]
     attribution_heatmap: List[List[float]]
-    timestamp: datetime = field(default_factory=datetime.now)
-
-
-@dataclass
-class DiagnosticResult:
-    """Result of a diagnostic analysis (e.g., dead expert detection)."""
-    
-    diagnostic_type: str
-    severity: str  # "info", "warning", "error", "critical"
-    message: str
-    affected_experts: List[int]
-    suggested_actions: List[str]
-    metrics: Dict[str, Any]
     timestamp: datetime = field(default_factory=datetime.now)
 
 

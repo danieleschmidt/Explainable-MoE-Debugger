@@ -1,6 +1,7 @@
 """Mock PyTorch module for testing without full PyTorch installation."""
 
-import numpy as np
+import random
+import math
 from typing import Any, Optional, Tuple, List
 
 class MockTensor:
@@ -8,24 +9,45 @@ class MockTensor:
     
     def __init__(self, data, dtype=None):
         if isinstance(data, (list, tuple)):
-            self.data = np.array(data)
-        elif isinstance(data, np.ndarray):
-            self.data = data
+            self.data = list(data) if isinstance(data, tuple) else data
         else:
-            self.data = np.array([data])
+            self.data = [data] if not isinstance(data, list) else data
         self.dtype = dtype or 'float32'
+        self._shape = self._compute_shape(self.data)
+    
+    def _compute_shape(self, data):
+        if not isinstance(data, list):
+            return ()
+        if not data:
+            return (0,)
+        if not isinstance(data[0], list):
+            return (len(data),)
+        return (len(data), len(data[0]))
     
     def dim(self) -> int:
-        return len(self.data.shape)
+        return len(self._shape)
     
     @property
     def shape(self) -> Tuple[int, ...]:
-        return self.data.shape
+        return self._shape
     
     def mean(self, dim=None):
-        if dim is None:
-            return MockTensor(np.mean(self.data))
-        return MockTensor(np.mean(self.data, axis=dim))
+        flat = self._flatten(self.data)
+        if not flat:
+            return MockTensor(0)
+        return MockTensor(sum(flat) / len(flat))
+    
+    def _flatten(self, data):
+        result = []
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, list):
+                    result.extend(self._flatten(item))
+                else:
+                    result.append(item)
+        else:
+            result.append(data)
+        return result
     
     def detach(self):
         return self
@@ -35,15 +57,17 @@ class MockTensor:
     
     def numpy(self):
         return self.data
-    
+        
     def item(self):
-        return self.data.item()
+        flat = self._flatten(self.data)
+        return flat[0] if flat else 0
+    
     
     def __getitem__(self, key):
         return MockTensor(self.data[key])
     
     def tolist(self):
-        return self.data.tolist()
+        return self.data
 
 class MockModule:
     """Mock PyTorch module class."""
@@ -79,40 +103,51 @@ def tensor(data, dtype=None):
 
 def topk(input_tensor, k, dim=-1):
     """Mock topk function."""
-    data = input_tensor.data
-    if dim == -1:
-        dim = len(data.shape) - 1
-    
-    indices = np.argsort(data, axis=dim)[..., -k:]
-    values = np.sort(data, axis=dim)[..., -k:]
-    
-    return MockTensor(values), MockTensor(indices)
+    data = input_tensor._flatten(input_tensor.data)
+    sorted_data = sorted(data, reverse=True)[:k]
+    indices = [data.index(val) for val in sorted_data]
+    return MockTensor(sorted_data), MockTensor(indices)
 
 def softmax(input_tensor, dim=-1):
-    """Mock softmax function."""
-    data = input_tensor.data
-    exp_data = np.exp(data - np.max(data, axis=dim, keepdims=True))
-    return MockTensor(exp_data / np.sum(exp_data, axis=dim, keepdims=True))
+    """Mock softmax function.""" 
+    data = input_tensor._flatten(input_tensor.data)
+    max_val = max(data) if data else 0
+    exp_data = [math.exp(x - max_val) for x in data]
+    sum_exp = sum(exp_data)
+    softmax_data = [x / sum_exp for x in exp_data] if sum_exp > 0 else data
+    return MockTensor(softmax_data)
+
+def randint(low, high, size):
+    """Mock randint function."""
+    if isinstance(size, tuple):
+        return MockTensor([random.randint(low, high-1) for _ in range(size[0])])
+    return MockTensor(random.randint(low, high-1))
 
 def cosine_similarity(x1, x2, dim=0):
     """Mock cosine similarity."""
-    dot_product = np.dot(x1.data, x2.data)
-    norm1 = np.linalg.norm(x1.data)
-    norm2 = np.linalg.norm(x2.data)
-    return MockTensor(dot_product / (norm1 * norm2))
+    data1 = x1._flatten(x1.data)
+    data2 = x2._flatten(x2.data)
+    dot_product = sum(a * b for a, b in zip(data1, data2))
+    norm1 = math.sqrt(sum(x * x for x in data1))
+    norm2 = math.sqrt(sum(x * x for x in data2))
+    return MockTensor(dot_product / (norm1 * norm2) if norm1 * norm2 > 0 else 0)
 
 def cat(tensors, dim=0):
     """Mock concatenation."""
-    arrays = [t.data for t in tensors]
-    return MockTensor(np.concatenate(arrays, axis=dim))
+    all_data = []
+    for t in tensors:
+        all_data.extend(t._flatten(t.data))
+    return MockTensor(all_data)
 
 def norm(input_tensor):
     """Mock norm function."""
-    return MockTensor(np.linalg.norm(input_tensor.data))
+    data = input_tensor._flatten(input_tensor.data)
+    return MockTensor(math.sqrt(sum(x * x for x in data)))
 
 def log(input_tensor):
     """Mock log function."""
-    return MockTensor(np.log(input_tensor.data + 1e-10))
+    data = input_tensor._flatten(input_tensor.data)
+    return MockTensor([math.log(x + 1e-10) for x in data])
 
 def sum(input_tensor, dim=None):
     """Mock sum function."""

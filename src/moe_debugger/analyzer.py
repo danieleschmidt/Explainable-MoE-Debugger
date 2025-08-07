@@ -1,6 +1,27 @@
 """Analysis engine for MoE debugging with statistical and behavioral analysis."""
 
-import numpy as np
+# Try to import numpy, fall back to mock if not available
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    # Mock numpy for basic operations
+    class MockNumpy:
+        @staticmethod
+        def mean(arr): return sum(arr) / len(arr) if arr else 0
+        @staticmethod  
+        def std(arr): return (sum((x - MockNumpy.mean(arr))**2 for x in arr) / len(arr))**0.5 if arr else 0
+        @staticmethod
+        def var(arr): return sum((x - MockNumpy.mean(arr))**2 for x in arr) / len(arr) if arr else 0
+        @staticmethod
+        def sum(arr): return sum(arr)
+        @staticmethod
+        def max(arr): return max(arr) if arr else 0
+        @staticmethod
+        def min(arr): return min(arr) if arr else 0
+    
+    np = MockNumpy()
+    NUMPY_AVAILABLE = False
 from typing import Dict, List, Optional, Any, Tuple
 from collections import defaultdict, Counter
 import math
