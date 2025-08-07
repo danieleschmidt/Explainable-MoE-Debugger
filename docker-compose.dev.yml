@@ -1,0 +1,54 @@
+# Docker Compose for MoE Debugger Development
+version: '3.8'
+
+services:
+  # Backend service
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - MOE_DEBUG_LOG_LEVEL=DEBUG
+      - MOE_DEBUG_HOST=0.0.0.0
+      - MOE_DEBUG_PORT=8000
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./src:/app/src
+      - ./logs:/app/logs
+      - ./data:/app/data
+    depends_on:
+      - redis
+    networks:
+      - moe-network
+    command: ["python", "-m", "moe_debugger.server", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+    environment:
+      - NODE_ENV=development
+      - FAST_REFRESH=true
+    depends_on:
+      - backend
+    networks:
+      - moe-network
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - moe-network
+
+networks:
+  moe-network:
+    driver: bridge

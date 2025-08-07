@@ -34,6 +34,7 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 from .models import VisualizationData, DebugSession
+from .model_loader import ModelLoader
 
 
 class ConnectionManager:
@@ -122,6 +123,9 @@ class DebugServer:
         # Connection manager for WebSockets
         self.connection_manager = ConnectionManager()
         
+        # Model loader
+        self.model_loader = ModelLoader()
+        
         # Active sessions
         self.active_sessions: Dict[str, DebugSession] = {}
         
@@ -205,6 +209,67 @@ class DebugServer:
             })
             
             return {"message": "Session ended successfully"}
+        
+        # Model management endpoints
+        @self.app.get("/api/models/supported")
+        async def get_supported_models():
+            """Get list of supported MoE models."""
+            return self.model_loader.list_supported_models()
+        
+        @self.app.get("/api/models/current")
+        async def get_current_model():
+            """Get information about the currently loaded model."""
+            model_info = self.model_loader.get_model_info()
+            if not model_info:
+                raise HTTPException(status_code=404, detail="No model currently loaded")
+            return model_info
+        
+        @self.app.post("/api/models/load")
+        async def load_model(request: Dict[str, Any]):
+            """Load a model from Hugging Face."""
+            model_name = request.get("model_name")
+            if not model_name:
+                raise HTTPException(status_code=400, detail="model_name is required")
+            
+            # Optional parameters
+            device = request.get("device")
+            torch_dtype = request.get("torch_dtype", "auto") 
+            load_in_8bit = request.get("load_in_8bit", False)
+            load_in_4bit = request.get("load_in_4bit", False)
+            trust_remote_code = request.get("trust_remote_code", False)
+            
+            success, message = self.model_loader.load_model(
+                model_name=model_name,
+                device=device,
+                torch_dtype=torch_dtype,
+                load_in_8bit=load_in_8bit,
+                load_in_4bit=load_in_4bit,
+                trust_remote_code=trust_remote_code
+            )
+            
+            if success:
+                # Broadcast model loaded event
+                await self.connection_manager.broadcast({
+                    "type": "model_loaded",
+                    "model_info": self.model_loader.get_model_info()
+                })
+                return {"success": True, "message": message, "model_info": self.model_loader.get_model_info()}
+            else:
+                raise HTTPException(status_code=400, detail=message)
+        
+        @self.app.post("/api/models/unload")
+        async def unload_model():
+            """Unload the current model."""
+            if not self.model_loader.get_model():
+                raise HTTPException(status_code=400, detail="No model currently loaded")
+            
+            self.model_loader.unload_model()
+            
+            await self.connection_manager.broadcast({
+                "type": "model_unloaded"
+            })
+            
+            return {"success": True, "message": "Model unloaded successfully"}
     
     def _setup_websockets(self):
         """Setup WebSocket endpoints."""
