@@ -142,3 +142,25 @@ class HookConfiguration:
     save_activations: bool
     track_parameters: List[str]
     memory_limit_mb: int = 2048
+
+@dataclass
+class ModelArchitecture:
+    """Model architecture information."""
+    
+    num_layers: int
+    num_experts_per_layer: int
+    hidden_size: int
+    intermediate_size: int
+    vocab_size: int
+    max_sequence_length: int
+    expert_capacity: float
+
+@dataclass 
+class PerformanceProfile:
+    """Performance profiling data."""
+    
+    timestamp: float
+    memory_usage_mb: float
+    compute_time_ms: float
+    expert_utilization: Dict[int, float]
+    routing_overhead_ms: float

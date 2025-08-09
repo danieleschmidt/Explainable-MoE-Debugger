@@ -1,7 +1,12 @@
 """PyTorch hooks for intercepting MoE model execution."""
 
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+    TORCH_AVAILABLE = True
+except ImportError:
+    from .mock_torch import torch, nn
+    TORCH_AVAILABLE = False
 from typing import Dict, List, Callable, Optional, Any
 import threading
 import time

@@ -160,6 +160,7 @@ Available commands:
                 if not debugger.current_session:
                     print("No session to export")
                 else:
+                    import time
                     parts = command.split()
                     filename = parts[1] if len(parts) > 1 else f"session_{int(time.time())}.json"
                     debugger.export_session(filename)

@@ -19,7 +19,20 @@ except ImportError:
     NUMPY_AVAILABLE = False
 
 from .logging_config import get_logger, performance_timer
-from .caching import get_global_cache, cached, CacheKey
+from .cache.manager import CacheManager
+try:
+    from .caching import get_global_cache, cached, CacheKey
+except ImportError:
+    # Fallback for missing caching module
+    def get_global_cache():
+        return CacheManager()
+    
+    def cached(func):
+        return func
+    
+    class CacheKey:
+        def __init__(self, *args, **kwargs):
+            pass
 from .models import RoutingEvent
 
 logger = get_logger(__name__)
@@ -196,7 +209,7 @@ class AsyncTaskProcessor:
             'routing_entropy': self._compute_entropy_vectorized(weights_array)
         }
     
-    def _compute_entropy_vectorized(self, weights_array: np.ndarray) -> float:
+    def _compute_entropy_vectorized(self, weights_array) -> float:
         """Compute routing entropy using vectorized operations."""
         # Softmax normalization
         exp_weights = np.exp(weights_array - np.max(weights_array, axis=1, keepdims=True))
