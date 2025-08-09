@@ -1,7 +1,12 @@
 """Main MoE debugger class for real-time model inspection."""
 
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+    TORCH_AVAILABLE = True
+except ImportError:
+    from .mock_torch import torch, nn
+    TORCH_AVAILABLE = False
 from typing import Optional, Dict, List, Any, Callable
 import asyncio
 import threading

@@ -277,14 +277,6 @@ class InputValidator:
                 arch.get('expert_capacity', 2.0), 'expert_capacity', min_value=0.1, max_value=100.0
             )
             
-            router_type = self.validate_string_input(
-                arch.get('router_type', 'top_k'), 'router_type', max_length=50, allow_empty=False
-            )
-            
-            expert_types = self.validate_dict_input(
-                arch.get('expert_types', {}), 'expert_types', max_keys=1000
-            )
-            
             return ModelArchitecture(
                 num_layers=int(num_layers),
                 num_experts_per_layer=int(num_experts_per_layer),
@@ -292,9 +284,7 @@ class InputValidator:
                 intermediate_size=int(intermediate_size),
                 vocab_size=int(vocab_size),
                 max_sequence_length=int(max_sequence_length),
-                expert_capacity=expert_capacity,
-                router_type=router_type,
-                expert_types=expert_types
+                expert_capacity=expert_capacity
             )
             
         except Exception as e:
