@@ -155,7 +155,7 @@ class MoEAnalyzer:
         
         stats = {
             "total_routing_decisions": len(routing_events),
-            "unique_sequences": len(set(event.sequence_id for event in routing_events)),
+            "unique_sequences": len(set(event.session_id for event in routing_events)),
             "layers_analyzed": len(set(event.layer_idx for event in routing_events)),
         }
         
@@ -166,7 +166,9 @@ class MoEAnalyzer:
         for event in routing_events:
             for expert_id in event.selected_experts:
                 expert_selections[expert_id] += 1
-            confidence_scores.append(event.routing_confidence)
+            # Use the first confidence score or 0.0 if empty
+            conf_score = event.confidence_scores[0] if event.confidence_scores else 0.0
+            confidence_scores.append(conf_score)
         
         # Calculate statistics
         stats.update({

@@ -220,7 +220,7 @@ export const useDebuggerStore = create<DebuggerState>()(
     }),
     {
       name: 'moe-debugger-store',
-      partialize: (state) => ({
+      partialize: (state: DebuggerState) => ({
         // Only persist UI preferences and config
         visualizationConfig: state.visualizationConfig,
         filterConfig: state.filterConfig,

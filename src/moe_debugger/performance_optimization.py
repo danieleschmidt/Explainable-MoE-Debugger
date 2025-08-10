@@ -37,6 +37,13 @@ from .models import RoutingEvent
 
 logger = get_logger(__name__)
 
+# Import auto-scaling for enhanced performance
+try:
+    from .auto_scaling import get_global_autoscaler
+    AUTO_SCALING_AVAILABLE = True
+except ImportError:
+    AUTO_SCALING_AVAILABLE = False
+
 
 @dataclass
 class ProcessingTask:
@@ -197,8 +204,8 @@ class AsyncTaskProcessor:
     def _vectorized_routing_analysis(self, events: List[RoutingEvent]) -> Dict[str, Any]:
         """Vectorized analysis using numpy."""
         # Extract data into arrays
-        weights_array = np.array([event.expert_weights for event in events])
-        confidence_array = np.array([event.routing_confidence for event in events])
+        weights_array = np.array([event.routing_weights for event in events])
+        confidence_array = np.array([event.confidence_scores[0] if event.confidence_scores else 0.0 for event in events])
         
         # Compute statistics efficiently
         return {
@@ -221,7 +228,7 @@ class AsyncTaskProcessor:
     
     def _standard_routing_analysis(self, events: List[RoutingEvent]) -> Dict[str, Any]:
         """Standard analysis without numpy."""
-        confidence_values = [event.routing_confidence for event in events]
+        confidence_values = [event.confidence_scores[0] if event.confidence_scores else 0.0 for event in events]
         
         return {
             'total_events': len(events),
@@ -335,7 +342,8 @@ class BatchProcessor:
         layer_counts = defaultdict(int)
         
         for event in events:
-            confidence_values.append(event.routing_confidence)
+            conf_score = event.confidence_scores[0] if event.confidence_scores else 0.0
+            confidence_values.append(conf_score)
             layer_counts[event.layer_idx] += 1
             
             for expert_id in event.selected_experts:

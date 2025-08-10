@@ -205,17 +205,16 @@ class QualityGateRunner:
             from moe_debugger.models import RoutingEvent
             from moe_debugger.analyzer import MoEAnalyzer
             
-            # Create sample routing events
+            # Create sample routing events using correct field names
             events = [
                 RoutingEvent(
-                    timestamp=time.time() + i,
                     layer_idx=0,
-                    token_position=i,
-                    token=f"token_{i}",
-                    expert_weights=[0.8, 0.2, 0.0, 0.0],
+                    token_idx=i,
+                    token_text=f"token_{i}",
+                    routing_weights=[0.8, 0.2, 0.0, 0.0],
                     selected_experts=[0],
-                    routing_confidence=0.9,
-                    sequence_id="test_seq"
+                    confidence_scores=[0.9],
+                    session_id="test_session"
                 )
                 for i in range(5)
             ]
@@ -340,17 +339,16 @@ class QualityGateRunner:
             
             processor = BatchProcessor(batch_size=10)
             
-            # Create test events
+            # Create test events using correct field names
             events = [
                 RoutingEvent(
-                    timestamp=time.time(),
                     layer_idx=0,
-                    token_position=i,
-                    token=f"token_{i}",
-                    expert_weights=[0.5, 0.3, 0.2],
+                    token_idx=i,
+                    token_text=f"token_{i}",
+                    routing_weights=[0.5, 0.3, 0.2],
                     selected_experts=[0],
-                    routing_confidence=0.8,
-                    sequence_id="test"
+                    confidence_scores=[0.8],
+                    session_id="test_session"
                 )
                 for i in range(5)
             ]
