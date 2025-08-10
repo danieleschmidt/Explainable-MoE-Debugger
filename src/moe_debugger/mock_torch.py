@@ -151,15 +151,18 @@ def log(input_tensor):
 
 def sum(input_tensor, dim=None):
     """Mock sum function."""
-    if dim is None:
-        return MockTensor(np.sum(input_tensor.data))
-    return MockTensor(np.sum(input_tensor.data, axis=dim))
+    data = input_tensor._flatten(input_tensor.data)
+    return MockTensor(sum(data))
 
 def rand(size):
     """Mock random tensor generation."""
     if isinstance(size, int):
         size = (size,)
-    return MockTensor(np.random.rand(*size))
+    import random
+    flat_size = 1
+    for s in size:
+        flat_size *= s
+    return MockTensor([random.random() for _ in range(flat_size)])
 
 class cuda:
     """Mock CUDA module."""
@@ -181,12 +184,25 @@ class nn:
     
     class Module(MockModule):
         pass
+    
+    class Linear(MockModule):
+        """Mock linear layer."""
+        def __init__(self, in_features, out_features, bias=True):
+            super().__init__()
+            self.in_features = in_features
+            self.out_features = out_features
+            self.weight = MockTensor([[0.1] * in_features for _ in range(out_features)])
+            if bias:
+                self.bias = MockTensor([0.0] * out_features)
+            else:
+                self.bias = None
 
 # Create mock torch module structure
 class MockTorch:
     """Mock torch module."""
     
     tensor = tensor
+    Tensor = MockTensor  # Add Tensor class reference
     topk = topk
     softmax = softmax
     cosine_similarity = cosine_similarity

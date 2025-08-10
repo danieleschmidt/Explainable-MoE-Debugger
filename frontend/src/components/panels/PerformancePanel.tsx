@@ -78,7 +78,7 @@ export function PerformancePanel() {
     // Add axes
     g.append('g')
       .attr('transform', `translate(0, ${innerHeight})`)
-      .call(d3.axisBottom(xScale).tickFormat(d3.timeFormat('%H:%M:%S')))
+      .call(d3.axisBottom(xScale).tickFormat((d) => d3.timeFormat('%H:%M:%S')(d as Date)))
       .selectAll('text')
       .style('fill', '#969696')
       .style('font-size', '12px');
@@ -143,7 +143,7 @@ export function PerformancePanel() {
       .style('pointer-events', 'none');
 
     g.selectAll('.dot')
-      .on('mouseover', function(event, d) {
+      .on('mouseover', function(event, d: any) {
         tooltip.transition().duration(200).style('opacity', .9);
         tooltip.html(`
           <div><strong>${selectedMetric.replace(/_/g, ' ')}</strong></div>
