@@ -15,6 +15,13 @@ try:
 except ImportError:
     pass
 
+# Always include factory for compatibility
+try:
+    from .debugger_factory import MoEDebuggerFactory
+    __all__.append("MoEDebuggerFactory")
+except ImportError:
+    pass
+
 try:
     from .analyzer import MoEAnalyzer  
     __all__.append("MoEAnalyzer")
