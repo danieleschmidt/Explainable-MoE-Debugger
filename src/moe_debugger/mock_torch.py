@@ -217,6 +217,24 @@ class MockTorch:
     @staticmethod
     def load(*args, **kwargs):
         return MockModule()
+    
+    @staticmethod
+    def save(*args, **kwargs):
+        pass
+    
+    @staticmethod
+    def no_grad():
+        """Mock no_grad context manager."""
+        return NoGradContext()
+
+class NoGradContext:
+    """Mock no_grad context manager."""
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *args):
+        pass
 
 # Make it available as torch
 torch = MockTorch()
