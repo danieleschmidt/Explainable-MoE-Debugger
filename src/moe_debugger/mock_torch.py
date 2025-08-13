@@ -164,6 +164,19 @@ def rand(size):
         flat_size *= s
     return MockTensor([random.random() for _ in range(flat_size)])
 
+def randn(*size):
+    """Mock random normal tensor generation."""
+    if len(size) == 1 and isinstance(size[0], (tuple, list)):
+        size = size[0]
+    elif len(size) == 1:
+        size = (size[0],)
+    
+    import random
+    flat_size = 1
+    for s in size:
+        flat_size *= s
+    return MockTensor([random.gauss(0, 1) for _ in range(flat_size)])
+
 class cuda:
     """Mock CUDA module."""
     
@@ -196,6 +209,23 @@ class nn:
                 self.bias = MockTensor([0.0] * out_features)
             else:
                 self.bias = None
+    
+    class functional:
+        """Mock functional module."""
+        
+        @staticmethod
+        def softmax(input_tensor, dim=-1):
+            """Mock softmax function."""
+            return softmax(input_tensor, dim)
+        
+        @staticmethod
+        def log_softmax(input_tensor, dim=-1):
+            """Mock log_softmax function."""
+            sm = softmax(input_tensor, dim)
+            return log(sm)
+
+# Add F alias for functional
+F = nn.functional
 
 # Create mock torch module structure
 class MockTorch:
@@ -211,8 +241,15 @@ class MockTorch:
     log = log
     sum = sum
     rand = rand
+    randn = randn
     cuda = cuda
     nn = nn
+    
+    # Add dtype constants
+    float32 = 'float32'
+    float64 = 'float64'
+    int32 = 'int32'
+    int64 = 'int64'
     
     @staticmethod
     def load(*args, **kwargs):
