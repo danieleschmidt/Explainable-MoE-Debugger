@@ -39,3 +39,43 @@ try:
     __all__.append("DebugServer")
 except ImportError:
     pass
+
+# Research extensions
+try:
+    from .adaptive_routing import (
+        AdaptiveRoutingSystem, AdaptiveRoutingConfig,
+        EntropyGuidedAdaptiveRouter, DeadExpertResurrectionFramework,
+        PredictiveLoadBalancer, MultiObjectiveRoutingOptimizer
+    )
+    __all__.extend([
+        "AdaptiveRoutingSystem", "AdaptiveRoutingConfig",
+        "EntropyGuidedAdaptiveRouter", "DeadExpertResurrectionFramework", 
+        "PredictiveLoadBalancer", "MultiObjectiveRoutingOptimizer"
+    ])
+except ImportError:
+    pass
+
+try:
+    from .research_validation import (
+        run_comprehensive_research_validation,
+        ExperimentRunner, StatisticalAnalyzer, ResearchReportGenerator
+    )
+    __all__.extend([
+        "run_comprehensive_research_validation",
+        "ExperimentRunner", "StatisticalAnalyzer", "ResearchReportGenerator"
+    ])
+except ImportError:
+    pass
+
+# Enhanced debugger with research integration
+try:
+    from .enhanced_debugger import (
+        EnhancedMoEDebugger, EnhancedDebuggerConfig,
+        create_enhanced_debugger
+    )
+    __all__.extend([
+        "EnhancedMoEDebugger", "EnhancedDebuggerConfig",
+        "create_enhanced_debugger"
+    ])
+except ImportError:
+    pass
