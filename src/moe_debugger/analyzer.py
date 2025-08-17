@@ -8,13 +8,28 @@ except ImportError:
     # Mock numpy for basic operations
     class MockNumpy:
         @staticmethod
-        def mean(arr): return sum(arr) / len(arr) if arr else 0
+        def mean(arr, axis=None): 
+            if axis is None:
+                return sum(arr) / len(arr) if arr else 0
+            elif axis == 0:
+                # Column-wise mean for 2D array
+                if len(arr) > 0 and hasattr(arr[0], '__len__'):
+                    num_cols = len(arr[0])
+                    return [sum(arr[i][j] for i in range(len(arr))) / len(arr) for j in range(num_cols)]
+                else:
+                    return arr
+            else:
+                return arr
         @staticmethod  
         def std(arr): return (sum((x - MockNumpy.mean(arr))**2 for x in arr) / len(arr))**0.5 if arr else 0
         @staticmethod
         def var(arr): return sum((x - MockNumpy.mean(arr))**2 for x in arr) / len(arr) if arr else 0
         @staticmethod
-        def sum(arr): return sum(arr)
+        def sum(arr, axis=None): 
+            if axis is None:
+                return sum(arr) if hasattr(arr, '__iter__') else arr
+            else:
+                return arr
         @staticmethod
         def max(arr): return max(arr) if arr else 0
         @staticmethod
@@ -295,7 +310,7 @@ class MoEAnalyzer:
         return 0
     
     def analyze_routing_entropy(self, routing_events: List[RoutingEvent]) -> Dict[str, Any]:
-        """Analyze entropy of routing decisions over time."""
+        """Analyze entropy of routing decisions over time with information-theoretic framework."""
         if not routing_events:
             return {}
         
@@ -303,16 +318,29 @@ class MoEAnalyzer:
         timestamps = []
         
         for event in routing_events:
-            weights = np.array(event.expert_weights)
+            # Handle both field names for compatibility
+            weights = getattr(event, 'expert_weights', None) or getattr(event, 'routing_weights', [])
             
-            # Compute softmax probabilities
-            exp_weights = np.exp(weights - np.max(weights))  # Numerical stability
-            probs = exp_weights / np.sum(exp_weights)
+            if NUMPY_AVAILABLE:
+                weights = np.array(weights)
+                # Compute softmax probabilities
+                exp_weights = np.exp(weights - np.max(weights))  # Numerical stability
+                probs = exp_weights / np.sum(exp_weights)
+                # Compute entropy
+                entropy = -np.sum(probs * np.log(probs + 1e-10))
+            else:
+                # Manual computation for mock numpy
+                max_weight = max(weights) if weights else 0
+                exp_weights = [math.exp(w - max_weight) for w in weights]
+                total = sum(exp_weights)
+                probs = [w / total for w in exp_weights] if total > 0 else [1.0 / len(weights)] * len(weights)
+                entropy = -sum(p * math.log(p + 1e-10) for p in probs)
             
-            # Compute entropy
-            entropy = -np.sum(probs * np.log(probs + 1e-10))
             entropies.append(entropy)
             timestamps.append(event.timestamp)
+        
+        # Enhanced information-theoretic analysis
+        it_metrics = self.compute_information_theoretic_metrics(routing_events)
         
         return {
             "mean_entropy": np.mean(entropies),
@@ -320,8 +348,409 @@ class MoEAnalyzer:
             "min_entropy": np.min(entropies),
             "max_entropy": np.max(entropies),
             "entropy_trend": np.polyfit(range(len(entropies)), entropies, 1)[0] if len(entropies) > 1 else 0,
-            "entropy_history": list(zip(timestamps, entropies))
+            "entropy_history": list(zip(timestamps, entropies)),
+            **it_metrics
         }
+    
+    def compute_information_theoretic_metrics(self, routing_events: List[RoutingEvent]) -> Dict[str, Any]:
+        """
+        Compute comprehensive information-theoretic metrics for expert routing.
+        
+        Implements Information-Theoretic Expert Analysis (ITEA) framework:
+        - Mutual information between inputs and expert selections
+        - Information bottleneck principles for optimal routing  
+        - Channel capacity analysis for expert communication
+        - Novel entropy measures specific to MoE systems
+        """
+        if not routing_events:
+            return {}
+        
+        # Extract input features and expert selections
+        input_features = []
+        expert_selections = []
+        expert_weights_matrix = []
+        
+        for event in routing_events:
+            if hasattr(event, 'input_features') and event.input_features:
+                input_features.append(event.input_features)
+            
+            # Handle both field names for compatibility
+            weights = getattr(event, 'expert_weights', None) or getattr(event, 'routing_weights', [])
+            if weights:
+                if NUMPY_AVAILABLE:
+                    expert_selections.append(np.argmax(weights))
+                else:
+                    expert_selections.append(weights.index(max(weights)))
+                expert_weights_matrix.append(weights)
+        
+        if NUMPY_AVAILABLE:
+            expert_weights_matrix = np.array(expert_weights_matrix)
+            num_experts = expert_weights_matrix.shape[1] if expert_weights_matrix.size > 0 else 0
+        else:
+            num_experts = len(expert_weights_matrix[0]) if expert_weights_matrix and len(expert_weights_matrix) > 0 else 0
+        
+        # 1. Mutual Information Analysis
+        mutual_info_metrics = self._compute_mutual_information(input_features, expert_selections)
+        
+        # 2. Information Bottleneck Analysis  
+        ib_metrics = self._compute_information_bottleneck(expert_weights_matrix, routing_events)
+        
+        # 3. Channel Capacity Analysis
+        channel_metrics = self._compute_channel_capacity(expert_weights_matrix)
+        
+        # 4. Novel MoE-specific Entropy Measures
+        moe_entropy_metrics = self._compute_moe_specific_entropy(expert_weights_matrix, routing_events)
+        
+        # 5. Information Flow Analysis
+        flow_metrics = self._compute_information_flow(expert_weights_matrix, routing_events)
+        
+        return {
+            "mutual_information": mutual_info_metrics,
+            "information_bottleneck": ib_metrics,
+            "channel_capacity": channel_metrics,
+            "moe_entropy_measures": moe_entropy_metrics,
+            "information_flow": flow_metrics,
+            "num_routing_events": len(routing_events),
+            "num_experts": num_experts
+        }
+    
+    def _compute_mutual_information(self, input_features: List, expert_selections: List) -> Dict[str, float]:
+        """Compute mutual information I(X;E) between inputs and expert selections."""
+        if not input_features or len(input_features) != len(expert_selections):
+            return {"mutual_info_input_expert": 0.0, "normalized_mutual_info": 0.0}
+        
+        # Discretize input features for MI computation
+        try:
+            input_features_array = np.array(input_features)
+            if input_features_array.ndim == 1:
+                input_features_array = input_features_array.reshape(-1, 1)
+            
+            # Simple quantization of input features
+            n_bins = min(10, len(set(expert_selections)))
+            input_quantized = []
+            for i in range(input_features_array.shape[1]):
+                feature_col = input_features_array[:, i]
+                if np.std(feature_col) > 1e-6:  # Avoid division by zero
+                    bins = np.linspace(np.min(feature_col), np.max(feature_col), n_bins + 1)
+                    quantized = np.digitize(feature_col, bins) - 1
+                    input_quantized.append(quantized)
+            
+            if input_quantized:
+                # Compute MI using histogram-based approach
+                input_combined = input_quantized[0]  # Use first feature for simplicity
+                mi = self._histogram_mutual_information(input_combined, expert_selections)
+                
+                # Normalize by max possible MI
+                expert_entropy = self._compute_entropy(expert_selections)
+                normalized_mi = mi / max(expert_entropy, 1e-10)
+                
+                return {
+                    "mutual_info_input_expert": float(mi),
+                    "normalized_mutual_info": float(normalized_mi),
+                    "input_entropy": float(self._compute_entropy(input_combined)),
+                    "expert_entropy": float(expert_entropy)
+                }
+        except Exception:
+            pass
+        
+        return {"mutual_info_input_expert": 0.0, "normalized_mutual_info": 0.0}
+    
+    def _compute_information_bottleneck(self, expert_weights, routing_events: List[RoutingEvent]) -> Dict[str, float]:
+        """
+        Compute information bottleneck metrics.
+        
+        Information Bottleneck: R(θ) = I(X;E) - βI(E;Y)
+        where X=inputs, E=expert selections, Y=outputs, β=compression parameter
+        """
+        if len(expert_weights) == 0 if isinstance(expert_weights, list) else (hasattr(expert_weights, 'size') and expert_weights.size == 0):
+            return {"ib_objective": 0.0, "compression_ratio": 0.0, "relevance_score": 0.0}
+        
+        # Compute expert utilization entropy (proxy for compression)
+        expert_probs = np.mean(expert_weights, axis=0)
+        expert_probs = expert_probs / np.sum(expert_probs)  # Normalize
+        compression_entropy = -np.sum(expert_probs * np.log(expert_probs + 1e-10))
+        
+        # Compute routing consistency (proxy for relevance) 
+        routing_consistency = 1.0 - np.mean(np.std(expert_weights, axis=1))
+        
+        # Information bottleneck objective (simplified)
+        beta = 0.1  # Compression parameter
+        ib_objective = routing_consistency - beta * compression_entropy
+        
+        return {
+            "ib_objective": float(ib_objective),
+            "compression_ratio": float(compression_entropy / np.log(expert_weights.shape[1])),
+            "relevance_score": float(routing_consistency),
+            "beta_parameter": beta
+        }
+    
+    def _compute_channel_capacity(self, expert_weights) -> Dict[str, float]:
+        """Compute channel capacity metrics for expert communication."""
+        if len(expert_weights) == 0 if isinstance(expert_weights, list) else (hasattr(expert_weights, 'size') and expert_weights.size == 0):
+            return {"channel_capacity": 0.0, "effective_capacity": 0.0, "capacity_utilization": 0.0}
+        
+        # Theoretical maximum capacity (log of number of experts)
+        if NUMPY_AVAILABLE:
+            max_capacity = np.log2(expert_weights.shape[1])
+        else:
+            max_capacity = math.log2(len(expert_weights[0]) if expert_weights and len(expert_weights) > 0 else 1)
+        
+        # Actual capacity based on weight distribution entropy
+        if NUMPY_AVAILABLE:
+            mean_weights = np.mean(expert_weights, axis=0)
+            mean_weights = mean_weights / np.sum(mean_weights)
+            actual_entropy = -np.sum(mean_weights * np.log2(mean_weights + 1e-10))
+        else:
+            # Manual computation for mock numpy
+            num_experts = len(expert_weights[0]) if expert_weights and len(expert_weights) > 0 else 0
+            if num_experts > 0:
+                mean_weights = [sum(expert_weights[i][j] for i in range(len(expert_weights))) / len(expert_weights) 
+                               for j in range(num_experts)]
+                total = sum(mean_weights)
+                if total > 0:
+                    mean_weights = [w / total for w in mean_weights]
+                actual_entropy = -sum(w * math.log2(w + 1e-10) for w in mean_weights)
+            else:
+                mean_weights = []
+                actual_entropy = 0.0
+        
+        # Effective capacity considering routing uncertainty
+        if NUMPY_AVAILABLE:
+            routing_uncertainty = np.mean([self._compute_entropy(weights) for weights in expert_weights])
+        else:
+            uncertainty_values = [self._compute_entropy(weights) for weights in expert_weights]
+            routing_uncertainty = sum(uncertainty_values) / len(uncertainty_values) if uncertainty_values else 0.0
+        effective_capacity = actual_entropy - routing_uncertainty * 0.1
+        
+        return {
+            "channel_capacity": float(max_capacity),
+            "effective_capacity": float(max(0, effective_capacity)),
+            "capacity_utilization": float(actual_entropy / max_capacity),
+            "routing_uncertainty": float(routing_uncertainty)
+        }
+    
+    def _compute_moe_specific_entropy(self, expert_weights, routing_events: List[RoutingEvent]) -> Dict[str, float]:
+        """Compute novel entropy measures specific to MoE systems."""
+        if len(expert_weights) == 0 if isinstance(expert_weights, list) else (hasattr(expert_weights, 'size') and expert_weights.size == 0):
+            return {"load_balance_entropy": 0.0, "specialization_entropy": 0.0, "temporal_entropy": 0.0}
+        
+        # Load balance entropy - how evenly experts are utilized
+        if NUMPY_AVAILABLE:
+            expert_utilization = np.mean(expert_weights, axis=0)
+            expert_utilization = expert_utilization / np.sum(expert_utilization)
+            load_balance_entropy = -np.sum(expert_utilization * np.log(expert_utilization + 1e-10))
+        else:
+            num_experts = len(expert_weights[0]) if expert_weights and len(expert_weights) > 0 else 0
+            if num_experts > 0:
+                expert_utilization = [sum(expert_weights[i][j] for i in range(len(expert_weights))) / len(expert_weights) 
+                                     for j in range(num_experts)]
+                total = sum(expert_utilization)
+                if total > 0:
+                    expert_utilization = [u / total for u in expert_utilization]
+                load_balance_entropy = -sum(u * math.log(u + 1e-10) for u in expert_utilization)
+            else:
+                load_balance_entropy = 0.0
+        
+        # Specialization entropy - how specialized each expert is
+        specialization_scores = []
+        if NUMPY_AVAILABLE:
+            for i in range(expert_weights.shape[1]):
+                expert_weights_i = expert_weights[:, i]
+                if np.std(expert_weights_i) > 1e-6:
+                    # Higher specialization = more variance in when expert is used
+                    specialization = np.std(expert_weights_i) / (np.mean(expert_weights_i) + 1e-10)
+                    specialization_scores.append(specialization)
+            specialization_entropy = np.mean(specialization_scores) if specialization_scores else 0.0
+        else:
+            num_experts = len(expert_weights[0]) if expert_weights and len(expert_weights) > 0 else 0
+            for i in range(num_experts):
+                expert_weights_i = [expert_weights[j][i] for j in range(len(expert_weights))]
+                if len(expert_weights_i) > 1:
+                    mean_weight = sum(expert_weights_i) / len(expert_weights_i)
+                    std_weight = (sum((w - mean_weight)**2 for w in expert_weights_i) / len(expert_weights_i))**0.5
+                    if std_weight > 1e-6:
+                        specialization = std_weight / (mean_weight + 1e-10)
+                        specialization_scores.append(specialization)
+            specialization_entropy = sum(specialization_scores) / len(specialization_scores) if specialization_scores else 0.0
+        
+        # Temporal entropy - how routing changes over time
+        temporal_entropy = 0.0
+        if len(routing_events) > 1:
+            temporal_changes = []
+            for i in range(1, len(routing_events)):
+                if NUMPY_AVAILABLE:
+                    prev_selection = np.argmax(expert_weights[i-1])
+                    curr_selection = np.argmax(expert_weights[i])
+                else:
+                    prev_weights = expert_weights[i-1] if isinstance(expert_weights, list) else routing_events[i-1].expert_weights
+                    curr_weights = expert_weights[i] if isinstance(expert_weights, list) else routing_events[i].expert_weights
+                    prev_selection = prev_weights.index(max(prev_weights))
+                    curr_selection = curr_weights.index(max(curr_weights))
+                temporal_changes.append(1 if prev_selection != curr_selection else 0)
+            
+            if temporal_changes:
+                if NUMPY_AVAILABLE:
+                    change_prob = np.mean(temporal_changes)
+                else:
+                    change_prob = sum(temporal_changes) / len(temporal_changes)
+                if change_prob > 0:
+                    if NUMPY_AVAILABLE:
+                        temporal_entropy = -(change_prob * np.log(change_prob) + 
+                                           (1-change_prob) * np.log(1-change_prob + 1e-10))
+                    else:
+                        temporal_entropy = -(change_prob * math.log(change_prob) + 
+                                           (1-change_prob) * math.log(1-change_prob + 1e-10))
+        
+        return {
+            "load_balance_entropy": float(load_balance_entropy),
+            "specialization_entropy": float(specialization_entropy),
+            "temporal_entropy": float(temporal_entropy),
+            "max_possible_lb_entropy": float(math.log(len(expert_weights[0]) if expert_weights and len(expert_weights) > 0 else 1) if not NUMPY_AVAILABLE else np.log(expert_weights.shape[1]))
+        }
+    
+    def _compute_information_flow(self, expert_weights, routing_events: List[RoutingEvent]) -> Dict[str, float]:
+        """Analyze information flow through the expert network."""
+        # Check if we have data
+        has_data = False
+        if isinstance(expert_weights, list):
+            has_data = len(expert_weights) > 0 and len(routing_events) >= 2
+        else:
+            has_data = (hasattr(expert_weights, 'size') and expert_weights.size > 0) and len(routing_events) >= 2
+        
+        if not has_data:
+            return {"flow_rate": 0.0, "flow_efficiency": 0.0, "bottleneck_score": 0.0}
+        
+        # Information flow rate - how much information flows per routing decision
+        flow_rates = []
+        num_samples = len(expert_weights) if isinstance(expert_weights, list) else len(routing_events)
+        
+        for i in range(1, min(num_samples, len(routing_events))):
+            # Get distributions from routing events or weights
+            if isinstance(expert_weights, list):
+                prev_weights = expert_weights[i-1]
+                curr_weights = expert_weights[i]
+            else:
+                prev_weights = routing_events[i-1].expert_weights
+                curr_weights = routing_events[i].expert_weights
+            
+            # Compute KL divergence between consecutive routing distributions
+            if NUMPY_AVAILABLE:
+                prev_dist = np.array(prev_weights) + 1e-10
+                curr_dist = np.array(curr_weights) + 1e-10
+                prev_dist = prev_dist / np.sum(prev_dist)
+                curr_dist = curr_dist / np.sum(curr_dist)
+                kl_div = np.sum(curr_dist * np.log(curr_dist / prev_dist))
+            else:
+                # Manual computation
+                prev_dist = [w + 1e-10 for w in prev_weights]
+                curr_dist = [w + 1e-10 for w in curr_weights]
+                prev_sum = sum(prev_dist)
+                curr_sum = sum(curr_dist)
+                prev_dist = [w / prev_sum for w in prev_dist]
+                curr_dist = [w / curr_sum for w in curr_dist]
+                kl_div = sum(c * math.log(c / p) for c, p in zip(curr_dist, prev_dist))
+            
+            flow_rates.append(kl_div)
+        
+        flow_rate = (sum(flow_rates) / len(flow_rates)) if flow_rates else 0.0
+        
+        # Flow efficiency - how efficiently information is routed
+        if isinstance(expert_weights, list):
+            active_experts_per_step = [sum(1 for w in weights if w > 0.1) for weights in expert_weights]
+            num_experts = len(expert_weights[0]) if expert_weights else 0
+        else:
+            active_experts_per_step = [sum(1 for w in event.expert_weights if w > 0.1) for event in routing_events]
+            num_experts = len(routing_events[0].expert_weights) if routing_events else 0
+        
+        avg_active_experts = (sum(active_experts_per_step) / len(active_experts_per_step)) if active_experts_per_step else 0.0
+        flow_efficiency = avg_active_experts / num_experts if num_experts > 0 else 0.0
+        
+        # Bottleneck score - identify routing bottlenecks
+        if isinstance(expert_weights, list) and expert_weights:
+            if NUMPY_AVAILABLE:
+                expert_usage_variance = np.var(np.mean(expert_weights, axis=0))
+                bottleneck_score = expert_usage_variance / (np.mean(np.mean(expert_weights, axis=0)) + 1e-10)
+            else:
+                # Manual computation
+                num_experts = len(expert_weights[0])
+                expert_means = [sum(expert_weights[i][j] for i in range(len(expert_weights))) / len(expert_weights) 
+                               for j in range(num_experts)]
+                overall_mean = sum(expert_means) / len(expert_means)
+                expert_usage_variance = sum((m - overall_mean)**2 for m in expert_means) / len(expert_means)
+                bottleneck_score = expert_usage_variance / (overall_mean + 1e-10)
+        else:
+            bottleneck_score = 0.0
+        
+        return {
+            "flow_rate": float(flow_rate),
+            "flow_efficiency": float(flow_efficiency),
+            "bottleneck_score": float(bottleneck_score),
+            "avg_active_experts": float(avg_active_experts)
+        }
+    
+    def _histogram_mutual_information(self, x, y) -> float:
+        """Compute mutual information using histogram-based approach."""
+        try:
+            if NUMPY_AVAILABLE:
+                # Create joint histogram
+                x_bins = len(set(x))
+                y_bins = len(set(y))
+                
+                joint_hist, _, _ = np.histogram2d(x, y, bins=[x_bins, y_bins])
+                joint_hist = joint_hist + 1e-10  # Smoothing
+                joint_prob = joint_hist / np.sum(joint_hist)
+                
+                # Marginal probabilities
+                x_prob = np.sum(joint_prob, axis=1)
+                y_prob = np.sum(joint_prob, axis=0)
+                
+                # Compute mutual information
+                mi = 0.0
+                for i in range(len(x_prob)):
+                    for j in range(len(y_prob)):
+                        if joint_prob[i, j] > 1e-10:
+                            mi += joint_prob[i, j] * np.log(joint_prob[i, j] / (x_prob[i] * y_prob[j]))
+                
+                return max(0.0, mi)
+            else:
+                # Simple mutual information approximation without numpy
+                # Count co-occurrences manually
+                unique_x = list(set(x))
+                unique_y = list(set(y))
+                
+                joint_counts = {}
+                x_counts = {}
+                y_counts = {}
+                total = len(x)
+                
+                for xi, yi in zip(x, y):
+                    joint_counts[(xi, yi)] = joint_counts.get((xi, yi), 0) + 1
+                    x_counts[xi] = x_counts.get(xi, 0) + 1
+                    y_counts[yi] = y_counts.get(yi, 0) + 1
+                
+                # Compute mutual information
+                mi = 0.0
+                for xi in unique_x:
+                    for yi in unique_y:
+                        joint_count = joint_counts.get((xi, yi), 0)
+                        if joint_count > 0:
+                            p_xy = joint_count / total
+                            p_x = x_counts[xi] / total
+                            p_y = y_counts[yi] / total
+                            mi += p_xy * math.log(p_xy / (p_x * p_y))
+                
+                return max(0.0, mi)
+        except Exception:
+            return 0.0
+    
+    def _compute_entropy(self, data: List) -> float:
+        """Compute entropy of discrete data."""
+        if not data:
+            return 0.0
+        
+        counts = Counter(data)
+        probs = np.array(list(counts.values())) / len(data)
+        return -np.sum(probs * np.log(probs + 1e-10))
     
     def detect_anomalies(self, routing_events: List[RoutingEvent]) -> List[DiagnosticResult]:
         """Detect anomalies in routing behavior."""
