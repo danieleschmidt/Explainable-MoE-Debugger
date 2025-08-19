@@ -79,3 +79,59 @@ try:
     ])
 except ImportError:
     pass
+
+# Autonomous recovery system
+try:
+    from .autonomous_recovery import (
+        AutonomousRecoverySystem, HealthStatus, FailurePattern,
+        get_recovery_system, autonomous_recovery
+    )
+    __all__.extend([
+        "AutonomousRecoverySystem", "HealthStatus", "FailurePattern",
+        "get_recovery_system", "autonomous_recovery"
+    ])
+except ImportError:
+    pass
+
+# Quantum routing algorithms
+try:
+    from .quantum_routing import (
+        QuantumRoutingSystem, QuantumSuperpositionRouter,
+        QuantumAnnealingOptimizer, get_quantum_router,
+        quantum_route_experts, quantum_enhanced_routing
+    )
+    __all__.extend([
+        "QuantumRoutingSystem", "QuantumSuperpositionRouter",
+        "QuantumAnnealingOptimizer", "get_quantum_router",
+        "quantum_route_experts", "quantum_enhanced_routing"
+    ])
+except ImportError:
+    pass
+
+# Distributed optimization system
+try:
+    from .distributed_optimization import (
+        DistributedMoEOptimizer, ClusterNode, NodeType,
+        get_distributed_optimizer, distributed_moe_analysis,
+        setup_distributed_cluster
+    )
+    __all__.extend([
+        "DistributedMoEOptimizer", "ClusterNode", "NodeType",
+        "get_distributed_optimizer", "distributed_moe_analysis",
+        "setup_distributed_cluster"
+    ])
+except ImportError:
+    pass
+
+# Advanced caching system
+try:
+    from .advanced_caching import (
+        HierarchicalCacheManager, CacheLevel, CacheState,
+        get_cache_manager, cached_moe_analysis
+    )
+    __all__.extend([
+        "HierarchicalCacheManager", "CacheLevel", "CacheState",
+        "get_cache_manager", "cached_moe_analysis"
+    ])
+except ImportError:
+    pass

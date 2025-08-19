@@ -1,0 +1,270 @@
+version: '3.8'
+
+services:
+  # Enhanced MoE Debugger with Autonomous Features
+  moe-debugger-autonomous:
+    build:
+      context: .
+      dockerfile: Dockerfile.autonomous
+    ports:
+      - "8080:8080"
+      - "8081:8081"  # Additional port for autonomous services
+    environment:
+      - AUTONOMOUS_RECOVERY_ENABLED=true
+      - QUANTUM_ROUTING_ENABLED=true
+      - DISTRIBUTED_MODE=false  # Single node for start
+      - ADVANCED_CACHING_ENABLED=true
+      - LOG_LEVEL=INFO
+      - CACHE_TTL=3600
+      - REDIS_URL=redis://redis-autonomous:6379
+    volumes:
+      - ./logs:/app/logs
+      - ./models:/app/models
+    depends_on:
+      - redis-autonomous
+      - postgres-autonomous
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Enhanced Redis with Distributed Caching
+  redis-autonomous:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-autonomous-data:/data
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL for Distributed State Management
+  postgres-autonomous:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=moe_autonomous
+      - POSTGRES_USER=moe_user
+      - POSTGRES_PASSWORD=moe_secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-autonomous-data:/var/lib/postgresql/data
+      - ./init-autonomous.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moe_user -d moe_autonomous"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Autonomous Recovery Monitor Service
+  recovery-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.autonomous
+    command: python -m moe_debugger.autonomous_recovery --monitor-mode
+    environment:
+      - RECOVERY_CHECK_INTERVAL=30
+      - HEALTH_CHECK_TIMEOUT=10
+      - CIRCUIT_BREAKER_THRESHOLD=5
+      - REDIS_URL=redis://redis-autonomous:6379
+    depends_on:
+      - redis-autonomous
+      - moe-debugger-autonomous
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+  # Quantum Router Service (Optional)
+  quantum-router:
+    build:
+      context: .
+      dockerfile: Dockerfile.autonomous
+    command: python -m moe_debugger.quantum_routing --service-mode
+    ports:
+      - "8082:8082"
+    environment:
+      - QUANTUM_COHERENCE_TIME=300
+      - ERROR_CORRECTION_ENABLED=true
+      - QUANTUM_VOLUME_TARGET=1024
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+    profiles:
+      - quantum  # Optional service
+
+  # Distributed Optimizer Coordinator
+  distributed-coordinator:
+    build:
+      context: .
+      dockerfile: Dockerfile.autonomous
+    command: python -m moe_debugger.distributed_optimization --coordinator-mode
+    ports:
+      - "8083:8083"
+    environment:
+      - CLUSTER_MODE=coordinator
+      - EDGE_NODES_ENABLED=true
+      - AUTO_SCALING_ENABLED=true
+      - FEDERATED_LEARNING_ENABLED=false
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+    profiles:
+      - distributed  # Optional service
+
+  # Cache Manager Service
+  cache-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile.autonomous
+    command: python -m moe_debugger.advanced_caching --service-mode
+    environment:
+      - PREDICTIVE_CACHING_ENABLED=true
+      - CACHE_WARMING_INTERVAL=300
+      - QUANTUM_CACHE_ENABLED=true
+      - REDIS_URL=redis://redis-autonomous:6379
+    depends_on:
+      - redis-autonomous
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+
+  # Enhanced Frontend with Autonomous Features
+  frontend-autonomous:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.autonomous
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://moe-debugger-autonomous:8080
+      - REACT_APP_AUTONOMOUS_FEATURES=true
+      - REACT_APP_QUANTUM_VISUALIZATION=true
+      - REACT_APP_DISTRIBUTED_MONITORING=true
+    depends_on:
+      - moe-debugger-autonomous
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+    profiles:
+      - frontend
+
+  # Monitoring and Observability Stack
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Log Aggregation
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+    profiles:
+      - logging
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.8.0
+    volumes:
+      - ./monitoring/logstash/config:/usr/share/logstash/pipeline
+    ports:
+      - "5044:5044"
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+    depends_on:
+      - elasticsearch
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+    profiles:
+      - logging
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.8.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - autonomous-network
+    restart: unless-stopped
+    profiles:
+      - logging
+
+volumes:
+  redis-autonomous-data:
+    driver: local
+  postgres-autonomous-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  elasticsearch-data:
+    driver: local
+
+networks:
+  autonomous-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
