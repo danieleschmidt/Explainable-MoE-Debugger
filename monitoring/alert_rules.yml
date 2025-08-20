@@ -1,0 +1,365 @@
+# Prometheus Alert Rules for Progressive Quality Gates
+
+groups:
+  # API Health and Performance Alerts
+  - name: api_health
+    interval: 30s
+    rules:
+      - alert: APIDown
+        expr: up{job="moe-debugger-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+          tier: critical
+        annotations:
+          summary: "MoE Debugger API is down"
+          description: "API has been down for more than 1 minute"
+          runbook_url: "https://docs.example.com/runbooks/api-down"
+
+      - alert: APIHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="moe-debugger-api"}[5m])) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+          tier: performance
+        annotations:
+          summary: "API has high latency"
+          description: "95th percentile latency is {{ $value }}s for 5 minutes"
+          runbook_url: "https://docs.example.com/runbooks/high-latency"
+
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{job="moe-debugger-api",status=~"5.."}[5m]) / rate(http_requests_total{job="moe-debugger-api"}[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          service: api
+          tier: reliability
+        annotations:
+          summary: "API has high error rate"
+          description: "Error rate is {{ $value | humanizePercentage }} for 3 minutes"
+          runbook_url: "https://docs.example.com/runbooks/high-error-rate"
+
+      - alert: APILowThroughput
+        expr: rate(http_requests_total{job="moe-debugger-api"}[5m]) < 1
+        for: 10m
+        labels:
+          severity: warning
+          service: api
+          tier: performance
+        annotations:
+          summary: "API has low throughput"
+          description: "Request rate is {{ $value }} requests/second for 10 minutes"
+
+  # WebSocket and Real-time Features
+  - name: websocket_health
+    interval: 30s
+    rules:
+      - alert: WebSocketConnectionsFailing
+        expr: websocket_connections_failed_total / websocket_connections_total > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: websocket
+          tier: connectivity
+        annotations:
+          summary: "High WebSocket connection failure rate"
+          description: "{{ $value | humanizePercentage }} of WebSocket connections are failing"
+
+      - alert: WebSocketHighLatency
+        expr: histogram_quantile(0.95, rate(websocket_message_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: websocket
+          tier: performance
+        annotations:
+          summary: "WebSocket messages have high latency"
+          description: "95th percentile message latency is {{ $value }}s"
+
+  # Database Performance and Health
+  - name: database_health
+    interval: 60s
+    rules:
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+          tier: critical
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "Database has been unreachable for 2 minutes"
+          runbook_url: "https://docs.example.com/runbooks/database-down"
+
+      - alert: DatabaseHighConnections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+          tier: capacity
+        annotations:
+          summary: "Database has high connection usage"
+          description: "{{ $value | humanizePercentage }} of max connections are in use"
+
+      - alert: DatabaseSlowQueries
+        expr: rate(pg_stat_statements_mean_time_seconds[5m]) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+          tier: performance
+        annotations:
+          summary: "Database has slow queries"
+          description: "Average query time is {{ $value }}s"
+
+  # Cache Performance and Health
+  - name: cache_health
+    interval: 30s
+    rules:
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: cache
+          tier: performance
+        annotations:
+          summary: "Redis cache is down"
+          description: "Cache has been down for 1 minute - performance may be degraded"
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_config_maxmemory_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: cache
+          tier: capacity
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Memory usage is {{ $value | humanizePercentage }} of max"
+
+      - alert: CacheHitRateLow
+        expr: rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m])) < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: cache
+          tier: performance
+        annotations:
+          summary: "Cache hit rate is low"
+          description: "Hit rate is {{ $value | humanizePercentage }} for 10 minutes"
+
+  # System Resource Alerts
+  - name: system_resources
+    interval: 60s
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          tier: capacity
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          tier: capacity
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }}"
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+          tier: capacity
+        annotations:
+          summary: "Disk space is low"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }}:{{ $labels.mountpoint }}"
+
+  # Application-Specific Alerts
+  - name: moe_debugger_app
+    interval: 30s
+    rules:
+      - alert: HighRoutingEventBacklog
+        expr: moe_debugger_routing_events_backlog > 10000
+        for: 2m
+        labels:
+          severity: warning
+          service: moe-debugger
+          tier: performance
+        annotations:
+          summary: "High routing event backlog"
+          description: "{{ $value }} routing events are queued for processing"
+
+      - alert: ExpertUtilizationImbalance
+        expr: stddev(moe_debugger_expert_utilization) > 0.3
+        for: 5m
+        labels:
+          severity: warning
+          service: moe-debugger
+          tier: quality
+        annotations:
+          summary: "Expert utilization is imbalanced"
+          description: "Standard deviation of expert utilization is {{ $value }}"
+
+      - alert: DeadExpertsDetected
+        expr: moe_debugger_dead_experts_count > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: moe-debugger
+          tier: quality
+        annotations:
+          summary: "Dead experts detected"
+          description: "{{ $value }} experts have no routing activity"
+
+      - alert: SessionCreationFailing
+        expr: rate(moe_debugger_sessions_failed_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          service: moe-debugger
+          tier: reliability
+        annotations:
+          summary: "Session creation is failing"
+          description: "{{ $value }} session creation failures per second"
+
+  # Frontend and User Experience
+  - name: frontend_health
+    interval: 60s
+    rules:
+      - alert: FrontendDown
+        expr: up{job="moe-debugger-frontend"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: frontend
+          tier: user-experience
+        annotations:
+          summary: "Frontend is down"
+          description: "Frontend has been unreachable for 2 minutes"
+
+      - alert: FrontendHighLoadTime
+        expr: histogram_quantile(0.95, rate(frontend_page_load_duration_seconds_bucket[5m])) > 3.0
+        for: 5m
+        labels:
+          severity: warning
+          service: frontend
+          tier: user-experience
+        annotations:
+          summary: "Frontend page load time is high"
+          description: "95th percentile load time is {{ $value }}s"
+
+  # Security and Compliance Alerts
+  - name: security_alerts
+    interval: 60s
+    rules:
+      - alert: UnauthorizedAccessAttempts
+        expr: rate(http_requests_total{status="401"}[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+          tier: security
+        annotations:
+          summary: "High rate of unauthorized access attempts"
+          description: "{{ $value }} unauthorized attempts per second"
+
+      - alert: SecurityScanVulnerabilities
+        expr: security_vulnerabilities_high_severity > 0
+        for: 0s
+        labels:
+          severity: critical
+          service: security
+          tier: security
+        annotations:
+          summary: "High severity security vulnerabilities detected"
+          description: "{{ $value }} high severity vulnerabilities found"
+
+  # Quality Gates Alerts
+  - name: quality_gates
+    interval: 120s
+    rules:
+      - alert: QualityGateFailure
+        expr: quality_gate_status == 0
+        for: 0s
+        labels:
+          severity: critical
+          service: quality
+          tier: deployment
+        annotations:
+          summary: "Quality gate failure detected"
+          description: "Quality gates are failing - deployment should be blocked"
+
+      - alert: TestCoverageLow
+        expr: test_coverage_percentage < 85
+        for: 0s
+        labels:
+          severity: warning
+          service: quality
+          tier: testing
+        annotations:
+          summary: "Test coverage is below threshold"
+          description: "Test coverage is {{ $value }}%, below 85% threshold"
+
+      - alert: PerformanceRegression
+        expr: performance_regression_detected == 1
+        for: 0s
+        labels:
+          severity: warning
+          service: quality
+          tier: performance
+        annotations:
+          summary: "Performance regression detected"
+          description: "Performance regression detected in latest deployment"
+
+  # Health Check Alerts
+  - name: health_checks
+    interval: 30s
+    rules:
+      - alert: HealthCheckFailures
+        expr: health_check_failures_consecutive > 3
+        for: 0s
+        labels:
+          severity: critical
+          service: health-monitor
+          tier: reliability
+        annotations:
+          summary: "Multiple consecutive health check failures"
+          description: "{{ $value }} consecutive health check failures detected"
+
+      - alert: HealthCheckTimeout
+        expr: health_check_duration_seconds > 30
+        for: 2m
+        labels:
+          severity: warning
+          service: health-monitor
+          tier: performance
+        annotations:
+          summary: "Health checks are timing out"
+          description: "Health check duration is {{ $value }}s"
+
+      - alert: AutoRollbackTriggered
+        expr: increase(auto_rollback_triggered_total[1h]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          service: deployment
+          tier: reliability
+        annotations:
+          summary: "Automatic rollback was triggered"
+          description: "{{ $value }} automatic rollbacks in the last hour"

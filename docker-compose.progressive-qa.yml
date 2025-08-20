@@ -1,0 +1,313 @@
+# Progressive Quality Gates - Enhanced Docker Compose
+# Includes health checks, monitoring, and rollback capabilities
+
+version: '3.8'
+
+services:
+  # Main MoE Debugger API
+  moe-debugger-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: moe-debugger-api
+    ports:
+      - "8080:8080"
+    environment:
+      - MOE_DEBUG_LOG_LEVEL=INFO
+      - MOE_DEBUG_PORT=8080
+      - MOE_DEBUG_HOST=0.0.0.0
+      - ASYNC_WORKERS=4
+      - BATCH_SIZE=1000
+      - REDIS_URL=redis://redis:6379
+      - ENABLE_DISTRIBUTED_CACHE=true
+      - ENABLE_AUTH=false
+      - CORS_ORIGINS=*
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
+      - "traefik.http.services.api.loadbalancer.server.port=8080"
+      - "service.name=moe-debugger-api"
+      - "service.version=1.0.0"
+
+  # Frontend Application
+  moe-debugger-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: moe-debugger-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_URL=http://localhost:8080
+      - REACT_APP_WS_URL=ws://localhost:8080/ws
+    depends_on:
+      moe-debugger-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+      - "service.name=moe-debugger-frontend"
+      - "service.version=1.0.0"
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: moe-debugger-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+    labels:
+      - "service.name=redis"
+      - "service.version=7"
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: moe-debugger-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=moe_debugger
+      - POSTGRES_USER=moe_user
+      - POSTGRES_PASSWORD=moe_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moe_user -d moe_debugger"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+    labels:
+      - "service.name=postgres"
+      - "service.version=15"
+
+  # Nginx Load Balancer/Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: moe-debugger-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      moe-debugger-api:
+        condition: service_healthy
+      moe-debugger-frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    labels:
+      - "service.name=nginx"
+      - "service.version=alpine"
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: moe-debugger-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+    labels:
+      - "service.name=prometheus"
+      - "service.version=latest"
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: moe-debugger-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+    labels:
+      - "service.name=grafana"
+      - "service.version=latest"
+
+  # Health Check Service
+  health-checker:
+    build:
+      context: .
+      dockerfile: Dockerfile.healthcheck
+    container_name: moe-debugger-health-checker
+    environment:
+      - CHECK_INTERVAL=30
+      - API_URL=http://moe-debugger-api:8080
+      - FRONTEND_URL=http://moe-debugger-frontend:3000
+      - ROLLBACK_THRESHOLD=3
+    volumes:
+      - ./scripts:/scripts:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      moe-debugger-api:
+        condition: service_started
+      moe-debugger-frontend:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.1'
+    labels:
+      - "service.name=health-checker"
+      - "service.version=1.0.0"
+
+  # Log Aggregator (Optional)
+  fluentd:
+    image: fluent/fluentd:v1.16-debian-1
+    container_name: moe-debugger-fluentd
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    volumes:
+      - ./monitoring/fluentd/fluent.conf:/fluentd/etc/fluent.conf:ro
+      - fluentd_data:/fluentd/log
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.1'
+    labels:
+      - "service.name=fluentd"
+      - "service.version=1.16"
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  fluentd_data:
+    driver: local
+
+networks:
+  default:
+    name: moe-debugger-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Deployment rollback configuration
+x-deployment-config:
+  healthcheck:
+    enabled: true
+    timeout: 300s  # 5 minutes max wait
+    retries: 3
+    rollback_on_failure: true
+  
+  rollback:
+    strategy: "previous_version"
+    timeout: 120s
+    preserve_data: true
+  
+  monitoring:
+    metrics_enabled: true
+    alerting_enabled: true
+    log_aggregation: true
+  
+  scaling:
+    api_replicas: 2
+    frontend_replicas: 1
+    auto_scale: true
+    max_replicas: 5

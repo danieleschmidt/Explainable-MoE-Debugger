@@ -1,54 +1,195 @@
+# Progressive Quality Gates - Pre-commit Configuration
+# Ensures code quality standards are enforced automatically
+
 repos:
+  # Enhanced Python code quality
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: trailing-whitespace
+        name: "✂️ Trim Trailing Whitespace"
       - id: end-of-file-fixer
+        name: "📄 Fix End of Files"
       - id: check-yaml
-      - id: check-added-large-files
-        args: ['--maxkb=50000']
-      - id: check-toml
+        name: "📋 YAML Syntax Check"
       - id: check-json
+        name: "🔧 JSON Syntax Check"
+      - id: check-toml
+        name: "⚙️ TOML Syntax Check"
+      - id: check-xml
+        name: "📰 XML Syntax Check"
       - id: check-merge-conflict
+        name: "🔀 Check Merge Conflicts"
+      - id: check-added-large-files
+        name: "📦 Check Large Files"
+        args: [--maxkb=1000]
+      - id: check-case-conflict
+        name: "🔤 Check Case Conflicts"
+      - id: check-executables-have-shebangs
+        name: "🔧 Check Executable Shebangs"
+      - id: mixed-line-ending
+        name: "📝 Fix Mixed Line Endings"
+        args: [--fix=lf]
       - id: debug-statements
+        name: "🐛 Check Debug Statements"
       - id: check-docstring-first
+        name: "📚 Check Docstring First"
 
+  # Enhanced Python formatting and linting
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version should match pyproject.toml
     rev: v0.1.15
     hooks:
       - id: ruff
+        name: "🔧 Ruff Linting"
         args: [--fix, --exit-non-zero-on-fix]
+        types: [python]
       - id: ruff-format
+        name: "🎨 Ruff Formatting"
+        types: [python]
 
+  # Enhanced type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
     hooks:
       - id: mypy
-        additional_dependencies: [types-all]
-        args: [--ignore-missing-imports, --scripts-are-modules]
+        name: "🔍 MyPy Type Checking"
+        additional_dependencies: 
+          - types-requests
+          - types-redis
+          - pydantic
+          - fastapi
+        args: [--strict, --show-error-codes]
+        exclude: ^tests/|^scripts/
 
+  # Enhanced security scanning
   - repo: https://github.com/pycqa/bandit
     rev: 1.7.5
     hooks:
       - id: bandit
-        args: ['-c', 'pyproject.toml']
+        name: "🛡️ Bandit Security Scan"
+        args: ['-c', 'pyproject.toml', '-f', 'json', '-o', 'bandit-report.json']
         additional_dependencies: ['bandit[toml]']
+        exclude: ^tests/
 
+  # Dependency vulnerability check
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.2
+    hooks:
+      - id: python-safety-dependencies-check
+        name: "🔒 Safety Vulnerability Check"
+
+  # Documentation quality
+  - repo: https://github.com/PyCQA/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        name: "📚 Docstring Quality Check"
+        args: [--convention=google]
+        exclude: ^tests/|^scripts/
+
+  # Import sorting
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        name: "📦 Import Sorting"
+        args: [--profile, black, --line-length, "88"]
+
+  # Secrets detection
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: "🔐 Detect Secrets"
+        args: [--baseline, .secrets.baseline]
+        exclude: ^\.secrets\.baseline$
+
+  # Enhanced frontend quality
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v3.0.3
     hooks:
       - id: prettier
+        name: "🎨 Prettier Formatting"
         types_or: [javascript, jsx, ts, tsx, json, yaml, markdown]
         exclude: '(package-lock\.json|yarn\.lock)'
 
+  # Dockerfile linting
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        name: "🐳 Dockerfile Linting"
+
+  # Progressive Quality Gates - Custom Hooks
   - repo: local
     hooks:
+      # Enhanced test execution
       - id: pytest-check
-        name: pytest-check
-        entry: pytest
+        name: "🧪 Pytest Quality Gate"
+        entry: python -m pytest tests/ --tb=short -q
         language: system
         pass_filenames: false
         always_run: false
         stages: [push]
-        verbose: true
+
+      # Frontend quality gates
+      - id: frontend-lint
+        name: "🎨 Frontend Linting"
+        entry: bash -c 'cd frontend && npm run lint'
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: false
+
+      - id: frontend-type-check
+        name: "🔍 Frontend Type Check"
+        entry: bash -c 'cd frontend && npm run type-check'
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      # Code complexity analysis
+      - id: complexity-check
+        name: "🧠 Complexity Analysis"
+        entry: python scripts/check_code_complexity.py
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      # Test coverage verification
+      - id: test-coverage-check
+        name: "🧪 Test Coverage Verification"
+        entry: python scripts/check_test_coverage.py
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [push]
+
+      # Performance regression check
+      - id: performance-regression-check
+        name: "⚡ Performance Regression Check"
+        entry: python scripts/quick_performance_check.py
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [push]
+
+      # API compatibility check
+      - id: api-compatibility-check
+        name: "🔌 API Compatibility Check"
+        entry: python scripts/check_api_compatibility.py
+        language: system
+        files: ^src/.*\.py$
+        pass_filenames: false
+
+      # Dependency license check
+      - id: dependency-license-check
+        name: "📜 License Compatibility Check"
+        entry: python scripts/check_dependency_licenses.py
+        language: system
+        files: ^(requirements\.txt|pyproject\.toml)$
+        pass_filenames: false
+
+# Progressive Quality Gates Configuration
+default_stages: [commit, push]
+minimum_pre_commit_version: '3.0.0'
+fail_fast: false

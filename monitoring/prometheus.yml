@@ -1,0 +1,132 @@
+# Prometheus Configuration for Progressive Quality Gates Monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'production'
+    project: 'moe-debugger'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alert_rules.yml"
+  - "recording_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 5s
+    metrics_path: /metrics
+
+  # MoE Debugger API monitoring
+  - job_name: 'moe-debugger-api'
+    static_configs:
+      - targets: ['moe-debugger-api:8080']
+    scrape_interval: 10s
+    metrics_path: /metrics
+    scrape_timeout: 5s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+
+  # Frontend monitoring (if metrics exposed)
+  - job_name: 'moe-debugger-frontend'
+    static_configs:
+      - targets: ['moe-debugger-frontend:3000']
+    scrape_interval: 30s
+    metrics_path: /metrics
+    scrape_timeout: 5s
+
+  # Redis monitoring
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # PostgreSQL monitoring
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Nginx monitoring
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:80']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Node exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+
+  # Container metrics via cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Health check service monitoring
+  - job_name: 'health-checker'
+    static_configs:
+      - targets: ['health-checker:8000']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Custom application metrics
+  - job_name: 'moe-debugger-custom-metrics'
+    static_configs:
+      - targets: ['moe-debugger-api:8080']
+    scrape_interval: 10s
+    metrics_path: /api/v1/metrics
+    scrape_timeout: 5s
+    params:
+      format: ['prometheus']
+
+  # Blackbox exporter for external monitoring
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - http://moe-debugger-api:8080/health
+        - http://moe-debugger-frontend:3000
+        - http://nginx:80/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+# Storage configuration
+storage:
+  tsdb:
+    retention.time: 7d
+    retention.size: 10GB
+    wal-compression: true
+
+# Remote write for long-term storage (optional)
+# remote_write:
+#   - url: "https://your-long-term-storage/api/v1/write"
+#     queue_config:
+#       max_samples_per_send: 1000
+#       max_shards: 200
+#       capacity: 2500
