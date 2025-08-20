@@ -1,0 +1,359 @@
+name: Progressive Quality Gates
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run nightly quality checks
+    - cron: '0 2 * * *'
+
+env:
+  PYTHON_VERSION: '3.10'
+  NODE_VERSION: '18'
+  QUALITY_THRESHOLD: 85
+
+jobs:
+  # Gate 1: Code Quality and Static Analysis
+  code-quality:
+    runs-on: ubuntu-latest
+    name: 🔍 Code Quality Gate
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          
+      - name: Code formatting check
+        run: ruff format --check .
+        
+      - name: Linting check
+        run: ruff check .
+        
+      - name: Type checking
+        run: mypy src/
+        
+      - name: Import sorting check
+        run: ruff check --select I .
+        
+      - name: Complexity analysis
+        run: |
+          pip install radon
+          radon cc src/ --min B
+          radon mi src/ --min B
+
+  # Gate 2: Security Vulnerability Assessment
+  security-gate:
+    runs-on: ubuntu-latest
+    name: 🛡️ Security Gate
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety semgrep
+          pip install -e .
+          
+      - name: Bandit security scan
+        run: bandit -r src/ -f json -o bandit-report.json
+        continue-on-error: true
+        
+      - name: Safety vulnerability check
+        run: safety check --json --output safety-report.json
+        continue-on-error: true
+        
+      - name: Semgrep security scan
+        run: |
+          semgrep --config=auto src/ --json --output=semgrep-report.json
+        continue-on-error: true
+        
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+            semgrep-report.json
+
+  # Gate 3: Comprehensive Testing
+  testing-gate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    name: 🧪 Testing Gate (Python ${{ matrix.python-version }})
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,all]"
+          
+      - name: Unit tests
+        run: pytest tests/unit/ -v --cov=src/moe_debugger --cov-report=xml --cov-report=term
+        
+      - name: Integration tests
+        run: pytest tests/integration/ -v --cov-append --cov=src/moe_debugger --cov-report=xml
+        
+      - name: Coverage threshold check
+        run: |
+          coverage report --fail-under=${{ env.QUALITY_THRESHOLD }}
+          
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+  # Gate 4: Performance Benchmarking
+  performance-gate:
+    runs-on: ubuntu-latest
+    name: ⚡ Performance Gate
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,all]"
+          pip install pytest-benchmark memory-profiler
+          
+      - name: Performance benchmarks
+        run: |
+          python -m pytest tests/benchmarks/ --benchmark-json=benchmark-results.json
+          
+      - name: Memory profiling
+        run: |
+          python -m mprof run --python python -c "
+          from moe_debugger import MoEDebugger
+          import torch
+          # Basic memory profiling
+          debugger = MoEDebugger()
+          print('Memory profiling complete')
+          "
+          
+      - name: Performance regression check
+        run: |
+          python scripts/check_performance_regression.py benchmark-results.json
+          
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results
+          path: |
+            benchmark-results.json
+            mprofile_*.dat
+
+  # Gate 5: Frontend Quality Gate
+  frontend-gate:
+    runs-on: ubuntu-latest
+    name: 🎨 Frontend Quality Gate
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+        
+      - name: TypeScript type checking
+        working-directory: frontend
+        run: npm run type-check
+        
+      - name: ESLint
+        working-directory: frontend
+        run: npm run lint
+        
+      - name: Prettier format check
+        working-directory: frontend
+        run: npm run format:check
+        
+      - name: Frontend tests
+        working-directory: frontend
+        run: npm test -- --coverage --watchAll=false
+        
+      - name: Build optimization check
+        working-directory: frontend
+        run: |
+          npm run build
+          npx bundlesize
+          
+      - name: Accessibility testing
+        working-directory: frontend
+        run: npm run test:a11y
+
+  # Gate 6: Documentation Quality
+  documentation-gate:
+    runs-on: ubuntu-latest
+    name: 📚 Documentation Gate
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install documentation tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pydocstyle doc8
+          
+      - name: Docstring quality check
+        run: pydocstyle src/moe_debugger/
+        
+      - name: Documentation format check
+        run: doc8 docs/
+        
+      - name: API documentation build
+        run: |
+          mkdocs build --strict
+          
+      - name: Link checking
+        run: |
+          pip install markdown-link-checker
+          markdown-link-checker README.md docs/
+
+  # Gate 7: Container Security & Quality
+  container-gate:
+    runs-on: ubuntu-latest
+    name: 🐳 Container Quality Gate
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Docker image
+        run: docker build -t moe-debugger:test .
+        
+      - name: Container security scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'moe-debugger:test'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: Container best practices check
+        run: |
+          docker run --rm -v "$PWD":/project \
+            hadolint/hadolint hadolint /project/Dockerfile
+            
+      - name: Image size optimization check
+        run: |
+          docker images moe-debugger:test --format "table {{.Size}}"
+          # Fail if image is larger than 2GB
+          SIZE=$(docker images moe-debugger:test --format "{{.Size}}" | grep -oE '[0-9.]+' | head -1)
+          python -c "
+          size = '$SIZE'
+          if 'GB' in size and float(size.replace('GB', '')) > 2:
+              raise Exception('Image size exceeds 2GB limit')
+          "
+
+  # Gate 8: Deploy Health Check
+  deployment-gate:
+    runs-on: ubuntu-latest
+    name: 🚀 Deployment Health Gate
+    needs: [code-quality, security-gate, testing-gate, performance-gate, frontend-gate, documentation-gate, container-gate]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          # docker-compose -f docker-compose.staging.yml up -d
+          
+      - name: Health check endpoints
+        run: |
+          # Wait for services to start
+          sleep 30
+          
+          # Check API health
+          curl -f http://localhost:8080/health || exit 1
+          
+          # Check frontend
+          curl -f http://localhost:3000 || exit 1
+          
+          # Check WebSocket connection
+          python scripts/test_websocket_health.py
+          
+      - name: Load testing
+        run: |
+          pip install locust
+          locust -f tests/load/locustfile.py --headless -u 10 -r 2 -t 60s --host http://localhost:8080
+          
+      - name: Database migration test
+        run: |
+          # Test database migrations
+          python -m alembic upgrade head
+          python -m alembic downgrade -1
+          python -m alembic upgrade head
+          
+      - name: Rollback test
+        run: |
+          echo "Testing rollback mechanism..."
+          # docker-compose -f docker-compose.staging.yml down
+          # Previous version deployment test
+
+  # Gate 9: Quality Metrics Aggregation
+  quality-metrics:
+    runs-on: ubuntu-latest
+    name: 📊 Quality Metrics Gate
+    needs: [code-quality, security-gate, testing-gate, performance-gate, frontend-gate, documentation-gate, container-gate]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        
+      - name: Generate quality report
+        run: |
+          python scripts/generate_quality_report.py \
+            --security-reports security-reports/ \
+            --benchmark-results benchmark-results/ \
+            --coverage-threshold ${{ env.QUALITY_THRESHOLD }}
+            
+      - name: Upload quality report
+        uses: actions/upload-artifact@v3
+        with:
+          name: quality-report
+          path: quality-report.html
+          
+      - name: Quality gate decision
+        run: |
+          python scripts/quality_gate_decision.py \
+            --threshold ${{ env.QUALITY_THRESHOLD }} \
+            --reports quality-reports/

@@ -1,0 +1,43 @@
+# Dockerfile for Health Check Service
+FROM python:3.10-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    netcat-traditional \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install additional health check dependencies
+RUN pip install --no-cache-dir \
+    requests \
+    websockets \
+    psutil \
+    docker
+
+# Copy health check scripts
+COPY scripts/deployment_health_check.py /app/
+COPY scripts/continuous_health_monitor.py /app/
+
+# Create health check user
+RUN useradd -m -s /bin/bash healthcheck
+
+# Set permissions
+RUN chown -R healthcheck:healthcheck /app
+
+USER healthcheck
+
+# Health check command
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python /app/deployment_health_check.py --url http://moe-debugger-api:8080 --no-rollback
+
+# Default command - continuous monitoring
+CMD ["python", "/app/continuous_health_monitor.py"]

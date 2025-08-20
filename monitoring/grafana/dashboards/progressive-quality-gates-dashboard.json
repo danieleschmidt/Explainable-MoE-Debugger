@@ -1,0 +1,299 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Progressive Quality Gates - MoE Debugger",
+    "tags": ["moe-debugger", "quality-gates", "monitoring"],
+    "style": "dark",
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Quality Gates Overview",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "quality_gate_status",
+            "legendFormat": "Overall Quality Gate"
+          },
+          {
+            "expr": "test_coverage_percentage",
+            "legendFormat": "Test Coverage %"
+          },
+          {
+            "expr": "security_scan_score",
+            "legendFormat": "Security Score"
+          },
+          {
+            "expr": "performance_score",
+            "legendFormat": "Performance Score"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "green", "value": 85}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "API Health and Performance",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job=\"moe-debugger-api\"}[5m])",
+            "legendFormat": "Request Rate"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"moe-debugger-api\"}[5m]))",
+            "legendFormat": "95th Percentile Latency"
+          },
+          {
+            "expr": "rate(http_requests_total{job=\"moe-debugger-api\",status=~\"5..\"}[5m])",
+            "legendFormat": "Error Rate"
+          }
+        ],
+        "yAxes": [
+          {"label": "Requests/sec", "min": 0},
+          {"label": "Latency (s)", "min": 0}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "System Resources",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+            "legendFormat": "CPU Usage %"
+          },
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "legendFormat": "Memory Usage %"
+          },
+          {
+            "expr": "(1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100",
+            "legendFormat": "Disk Usage %"
+          }
+        ],
+        "yAxes": [
+          {"label": "Percentage", "min": 0, "max": 100}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Health Check Status",
+        "type": "heatmap",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "health_check_status",
+            "legendFormat": "Health Status"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Quality Metrics Trend",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "test_coverage_percentage",
+            "legendFormat": "Test Coverage"
+          },
+          {
+            "expr": "code_quality_score",
+            "legendFormat": "Code Quality"
+          },
+          {
+            "expr": "security_scan_score",
+            "legendFormat": "Security Score"
+          },
+          {
+            "expr": "performance_score",
+            "legendFormat": "Performance Score"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Deployment Pipeline Status",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "deployment_pipeline_status",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "MoE Debugger Specific Metrics",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
+        "targets": [
+          {
+            "expr": "moe_debugger_routing_events_rate",
+            "legendFormat": "Routing Events/sec"
+          },
+          {
+            "expr": "moe_debugger_expert_utilization_avg",
+            "legendFormat": "Avg Expert Utilization"
+          },
+          {
+            "expr": "moe_debugger_dead_experts_count",
+            "legendFormat": "Dead Experts"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Cache Performance",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
+        "targets": [
+          {
+            "expr": "rate(redis_keyspace_hits_total[5m]) / (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m]))",
+            "legendFormat": "Cache Hit Rate"
+          },
+          {
+            "expr": "redis_memory_used_bytes / redis_config_maxmemory_bytes * 100",
+            "legendFormat": "Memory Usage %"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Database Performance",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 40},
+        "targets": [
+          {
+            "expr": "rate(pg_stat_database_xact_commit[5m])",
+            "legendFormat": "Transactions/sec"
+          },
+          {
+            "expr": "pg_stat_database_numbackends",
+            "legendFormat": "Active Connections"
+          },
+          {
+            "expr": "rate(pg_stat_statements_mean_time_seconds[5m])",
+            "legendFormat": "Avg Query Time"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Alert Status",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 40},
+        "targets": [
+          {
+            "expr": "ALERTS{alertstate=\"firing\"}",
+            "format": "table"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "WebSocket Metrics",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 48},
+        "targets": [
+          {
+            "expr": "websocket_connections_active",
+            "legendFormat": "Active Connections"
+          },
+          {
+            "expr": "rate(websocket_messages_total[5m])",
+            "legendFormat": "Messages/sec"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(websocket_message_duration_seconds_bucket[5m]))",
+            "legendFormat": "Message Latency (95th)"
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Security Metrics",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 48},
+        "targets": [
+          {
+            "expr": "security_vulnerabilities_critical",
+            "legendFormat": "Critical Vulnerabilities"
+          },
+          {
+            "expr": "security_vulnerabilities_high",
+            "legendFormat": "High Vulnerabilities"
+          },
+          {
+            "expr": "rate(http_requests_total{status=\"401\"}[5m])",
+            "legendFormat": "Unauthorized Attempts/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 1},
+                {"color": "red", "value": 5}
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "instance",
+          "type": "query",
+          "query": "label_values(up, instance)",
+          "refresh": 1
+        },
+        {
+          "name": "job",
+          "type": "query", 
+          "query": "label_values(up, job)",
+          "refresh": 1
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Deployments",
+          "datasource": "prometheus",
+          "expr": "deployment_timestamp",
+          "titleFormat": "Deployment",
+          "textFormat": "New deployment"
+        },
+        {
+          "name": "Alerts",
+          "datasource": "prometheus", 
+          "expr": "ALERTS{alertstate=\"firing\"}",
+          "titleFormat": "{{alertname}}",
+          "textFormat": "{{description}}"
+        }
+      ]
+    }
+  }
+}
