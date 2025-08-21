@@ -9,6 +9,7 @@ module.exports = {
     extend: {
       colors: {
         // Chrome DevTools color scheme
+        border: '#3c3c3c',
         devtools: {
           background: '#1e1e1e',
           surface: '#2d2d2d',

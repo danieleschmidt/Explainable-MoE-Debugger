@@ -3,15 +3,16 @@ import { TabBar } from '@/components/layout/TabBar'
 import { useDebuggerStore } from '@/store/debugger'
 
 // Mock the store
-jest.mock('@/store/debugger')
-
 const mockStore = {
   activePanel: 'network' as const,
   setActivePanel: jest.fn(),
 }
 
+jest.mock('@/store/debugger', () => ({
+  useDebuggerStore: () => mockStore,
+}))
+
 beforeEach(() => {
-  (useDebuggerStore as jest.Mock).mockReturnValue(mockStore)
   jest.clearAllMocks()
 })
 

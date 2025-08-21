@@ -24,7 +24,7 @@ export function StatusBar() {
   const { isConnected } = useWebSocket();
 
   const getConnectionIcon = () => {
-    if (isConnected && connectionStatus === 'connected') {
+    if (isConnected() && connectionStatus === 'connected') {
       return <Wifi size={14} className="text-devtools-success" />;
     }
     return <WifiOff size={14} className="text-devtools-error" />;
@@ -54,7 +54,7 @@ export function StatusBar() {
           <div className="flex items-center space-x-2">
             {getConnectionIcon()}
             <span className={
-              isConnected && connectionStatus === 'connected' 
+              isConnected() && connectionStatus === 'connected' 
                 ? 'text-devtools-success' 
                 : 'text-devtools-error'
             }>
