@@ -1,0 +1,507 @@
+{
+  "experiment_timestamp": 1755928186.9492981,
+  "search_space_config": {
+    "num_experts_range": [
+      4,
+      16
+    ],
+    "expert_size_range": [
+      128,
+      1024
+    ],
+    "sparsity_range": [
+      0.2,
+      0.8
+    ],
+    "routing_strategies": [
+      "learned",
+      "hash",
+      "quantum",
+      "adaptive"
+    ],
+    "load_balancing_methods": [
+      "none",
+      "switch",
+      "expert_choice",
+      "balanced"
+    ]
+  },
+  "multi_objective_nas": {
+    "search_config": {
+      "population_size": 30,
+      "generations": 10,
+      "mutation_rate": 0.3,
+      "crossover_rate": 0.7,
+      "objectives_weights": {
+        "accuracy": 0.4,
+        "efficiency": 0.3,
+        "load_balance": 0.2,
+        "hardware_fit": 0.1
+      }
+    },
+    "evolution_history": [
+      {
+        "generation": 0,
+        "best_fitness": 0.8320947839836952,
+        "avg_fitness": 0.7188776465581073,
+        "best_accuracy": 0.9388763986354578,
+        "best_efficiency": 0.8028568297863093
+      },
+      {
+        "generation": 1,
+        "best_fitness": 0.8448623788282907,
+        "avg_fitness": 0.7965768478253068,
+        "best_accuracy": 1.0,
+        "best_efficiency": 0.7492931457662192,
+        "pareto_front_size": 7
+      },
+      {
+        "generation": 2,
+        "best_fitness": 0.8524866420760694,
+        "avg_fitness": 0.8061171404580952,
+        "best_accuracy": 0.9657752651088236,
+        "best_efficiency": 0.717022778694676,
+        "pareto_front_size": 3
+      },
+      {
+        "generation": 3,
+        "best_fitness": 0.8544091193442223,
+        "avg_fitness": 0.8071185464334024,
+        "best_accuracy": 0.9705559510936508,
+        "best_efficiency": 0.7489894198681307,
+        "pareto_front_size": 4
+      },
+      {
+        "generation": 4,
+        "best_fitness": 0.8544091193442223,
+        "avg_fitness": 0.8013690057784769,
+        "best_accuracy": 0.9705559510936508,
+        "best_efficiency": 0.7390038559022573,
+        "pareto_front_size": 4
+      },
+      {
+        "generation": 5,
+        "best_fitness": 0.8544091193442223,
+        "avg_fitness": 0.8140522802617567,
+        "best_accuracy": 0.9705559510936508,
+        "best_efficiency": 0.7723744926459335,
+        "pareto_front_size": 5
+      },
+      {
+        "generation": 6,
+        "best_fitness": 0.8677109606494331,
+        "avg_fitness": 0.8226463597900912,
+        "best_accuracy": 0.9705559510936508,
+        "best_efficiency": 0.7892093763634811,
+        "pareto_front_size": 4
+      },
+      {
+        "generation": 7,
+        "best_fitness": 0.8730673938887709,
+        "avg_fitness": 0.816041351903799,
+        "best_accuracy": 0.9813227110775278,
+        "best_efficiency": 0.7901394358872905,
+        "pareto_front_size": 3
+      },
+      {
+        "generation": 8,
+        "best_fitness": 0.8730673938887709,
+        "avg_fitness": 0.8250998087992555,
+        "best_accuracy": 0.9813227110775278,
+        "best_efficiency": 0.8063988095238096,
+        "pareto_front_size": 4
+      },
+      {
+        "generation": 9,
+        "best_fitness": 0.8730673938887709,
+        "avg_fitness": 0.8274710959696472,
+        "best_accuracy": 0.9813227110775278,
+        "best_efficiency": 0.8094561688311689,
+        "pareto_front_size": 6
+      }
+    ],
+    "best_architectures": [
+      {
+        "candidate_id": "arch_27164",
+        "fitness_score": 0.8730673938887709,
+        "accuracy_score": 0.9400639078064592,
+        "efficiency_score": 0.7901394358872905,
+        "load_balance_score": 0.8,
+        "topology": {
+          "num_experts": 12,
+          "expert_sizes": [
+            148,
+            459,
+            403,
+            378,
+            192,
+            263,
+            420,
+            367,
+            163,
+            531,
+            292,
+            406
+          ],
+          "routing_strategy": "hash",
+          "load_balancing": "expert_choice",
+          "sparsity_factor": 0.756561387337274
+        }
+      },
+      {
+        "candidate_id": "arch_31289",
+        "fitness_score": 0.8677109606494331,
+        "accuracy_score": 0.9273703693509718,
+        "efficiency_score": 0.7892093763634811,
+        "load_balance_score": 0.8,
+        "topology": {
+          "num_experts": 12,
+          "expert_sizes": [
+            148,
+            459,
+            403,
+            378,
+            217,
+            263,
+            420,
+            367,
+            163,
+            531,
+            292,
+            406
+          ],
+          "routing_strategy": "hash",
+          "load_balancing": "expert_choice",
+          "sparsity_factor": 0.756561387337274
+        }
+      },
+      {
+        "candidate_id": "arch_28786",
+        "fitness_score": 0.8628105983445454,
+        "accuracy_score": 0.9813227110775278,
+        "efficiency_score": 0.7009383797117811,
+        "load_balance_score": 0.8,
+        "topology": {
+          "num_experts": 12,
+          "expert_sizes": [
+            158,
+            459,
+            403,
+            378,
+            217,
+            263,
+            368,
+            367,
+            163,
+            531,
+            244,
+            406
+          ],
+          "routing_strategy": "adaptive",
+          "load_balancing": "expert_choice",
+          "sparsity_factor": 0.627513359993738
+        }
+      },
+      {
+        "candidate_id": "arch_21948",
+        "fitness_score": 0.8556471303975702,
+        "accuracy_score": 0.9448198871617166,
+        "efficiency_score": 0.7257305851096117,
+        "load_balance_score": 0.8,
+        "topology": {
+          "num_experts": 12,
+          "expert_sizes": [
+            158,
+            351,
+            156,
+            378,
+            192,
+            263,
+            368,
+            367,
+            163,
+            531,
+            244,
+            406
+          ],
+          "routing_strategy": "adaptive",
+          "load_balancing": "switch",
+          "sparsity_factor": 0.654151611583553
+        }
+      },
+      {
+        "candidate_id": "arch_93330",
+        "fitness_score": 0.8475804298494065,
+        "accuracy_score": 0.8739469441366198,
+        "efficiency_score": 0.7933388406491954,
+        "load_balance_score": 0.8,
+        "topology": {
+          "num_experts": 13,
+          "expert_sizes": [
+            148,
+            459,
+            403,
+            378,
+            192,
+            263,
+            420,
+            367,
+            163,
+            531,
+            292,
+            406,
+            242
+          ],
+          "routing_strategy": "hash",
+          "load_balancing": "expert_choice",
+          "sparsity_factor": 0.756561387337274
+        }
+      },
+      {
+        "candidate_id": "arch_21948",
+        "fitness_score": 0.8457611034976504,
+        "accuracy_score": 0.9076481181233226,
+        "efficiency_score": 0.7423395208277378,
+        "load_balance_score": 0.8,
+        "topology": {
+          "num_experts": 12,
+          "expert_sizes": [
+            158,
+            351,
+            156,
+            378,
+            192,
+            263,
+            368,
+            367,
+            163,
+            531,
+            244,
+            406
+          ],
+          "routing_strategy": "adaptive",
+          "load_balancing": "switch",
+          "sparsity_factor": 0.6956739508788681
+        }
+      },
+      {
+        "candidate_id": "arch_48944",
+        "fitness_score": 0.8404125801447369,
+        "accuracy_score": 0.8481651654009559,
+        "efficiency_score": 0.8038217132811819,
+        "load_balance_score": 0.8,
+        "topology": {
+          "num_experts": 5,
+          "expert_sizes": [
+            148,
+            351,
+            156,
+            378,
+            192
+          ],
+          "routing_strategy": "hash",
+          "load_balancing": "expert_choice",
+          "sparsity_factor": 0.690134640345812
+        }
+      },
+      {
+        "candidate_id": "arch_21948",
+        "fitness_score": 0.8400732923486477,
+        "accuracy_score": 0.9073636163835853,
+        "efficiency_score": 0.7237594859840452,
+        "load_balance_score": 0.8,
+        "topology": {
+          "num_experts": 12,
+          "expert_sizes": [
+            158,
+            459,
+            156,
+            378,
+            217,
+            263,
+            368,
+            367,
+            163,
+            531,
+            244,
+            406
+          ],
+          "routing_strategy": "adaptive",
+          "load_balancing": "expert_choice",
+          "sparsity_factor": 0.6615936554363031
+        }
+      },
+      {
+        "candidate_id": "arch_36469",
+        "fitness_score": 0.8392035034721032,
+        "accuracy_score": 0.9152690841366435,
+        "efficiency_score": 0.7103195660581524,
+        "load_balance_score": 0.8,
+        "topology": {
+          "num_experts": 5,
+          "expert_sizes": [
+            400,
+            351,
+            156,
+            354,
+            216
+          ],
+          "routing_strategy": "adaptive",
+          "load_balancing": "switch",
+          "sparsity_factor": 0.6126292722882378
+        }
+      },
+      {
+        "candidate_id": "arch_29188",
+        "fitness_score": 0.8351619288623542,
+        "accuracy_score": 0.8514571011779393,
+        "efficiency_score": 0.7819302946372616,
+        "load_balance_score": 0.8,
+        "topology": {
+          "num_experts": 11,
+          "expert_sizes": [
+            143,
+            459,
+            156,
+            378,
+            217,
+            263,
+            368,
+            367,
+            163,
+            531,
+            244
+          ],
+          "routing_strategy": "hash",
+          "load_balancing": "switch",
+          "sparsity_factor": 0.6956739508788681
+        }
+      }
+    ],
+    "pareto_front": [
+      {
+        "candidate_id": "arch_27164",
+        "fitness_score": 0.8730673938887709,
+        "accuracy_score": 0.9400639078064592,
+        "efficiency_score": 0.7901394358872905,
+        "load_balance_score": 0.8
+      },
+      {
+        "candidate_id": "arch_28786",
+        "fitness_score": 0.8628105983445454,
+        "accuracy_score": 0.9813227110775278,
+        "efficiency_score": 0.7009383797117811,
+        "load_balance_score": 0.8
+      },
+      {
+        "candidate_id": "arch_21948",
+        "fitness_score": 0.8556471303975702,
+        "accuracy_score": 0.9448198871617166,
+        "efficiency_score": 0.7257305851096117,
+        "load_balance_score": 0.8
+      },
+      {
+        "candidate_id": "arch_93330",
+        "fitness_score": 0.8475804298494065,
+        "accuracy_score": 0.8739469441366198,
+        "efficiency_score": 0.7933388406491954,
+        "load_balance_score": 0.8
+      },
+      {
+        "candidate_id": "arch_48944",
+        "fitness_score": 0.8404125801447369,
+        "accuracy_score": 0.8481651654009559,
+        "efficiency_score": 0.8038217132811819,
+        "load_balance_score": 0.8
+      },
+      {
+        "candidate_id": "arch_29188",
+        "fitness_score": 0.8111719052377493,
+        "accuracy_score": 0.7708376364709966,
+        "efficiency_score": 0.8094561688311689,
+        "load_balance_score": 0.8
+      }
+    ],
+    "search_statistics": {
+      "final_best_fitness": 0.8730673938887709,
+      "fitness_improvement": 0.040972609905075674,
+      "convergence_generation": 3,
+      "diversity_maintained": 3
+    }
+  },
+  "progressive_growth": {
+    "growth_config": {
+      "initial_experts": 4,
+      "max_experts": 12,
+      "growth_threshold": 0.03,
+      "validation_trials": 5
+    },
+    "growth_history": [
+      {
+        "step": 0,
+        "num_experts": 4,
+        "expert_sizes": [
+          512,
+          512,
+          512,
+          512
+        ],
+        "routing_strategy": "learned",
+        "performance": {
+          "accuracy_mean": 0.7513868619253481,
+          "accuracy_std": 0.054472731384288556,
+          "efficiency_mean": 0.6496774193548388,
+          "efficiency_std": 0.0,
+          "load_balance_mean": 0.8,
+          "load_balance_std": 0.0,
+          "overall_score": 0.7305966567691257
+        },
+        "growth_action": "initial"
+      }
+    ],
+    "final_architecture": {
+      "num_experts": 4,
+      "expert_sizes": [
+        512,
+        512,
+        512,
+        512
+      ],
+      "routing_strategy": "learned",
+      "load_balancing": "switch",
+      "sparsity_factor": 0.5,
+      "performance": {
+        "accuracy_mean": 0.7513868619253481,
+        "accuracy_std": 0.054472731384288556,
+        "efficiency_mean": 0.6496774193548388,
+        "efficiency_std": 0.0,
+        "load_balance_mean": 0.8,
+        "load_balance_std": 0.0,
+        "overall_score": 0.7305966567691257
+      }
+    },
+    "growth_statistics": {
+      "total_steps": 0,
+      "final_improvement": 0.0,
+      "convergence_step": 0,
+      "growth_actions_taken": []
+    }
+  },
+  "comparative_analysis": {
+    "best_multi_objective": {
+      "fitness_score": 0.8730673938887709,
+      "num_experts": 12,
+      "routing_strategy": "hash",
+      "sparsity_factor": 0.756561387337274
+    },
+    "best_progressive": {
+      "overall_score": 0.7305966567691257,
+      "num_experts": 4,
+      "routing_strategy": "learned",
+      "improvement_over_baseline": 0.0
+    },
+    "recommendations": [
+      "Multi-objective search found superior architecture"
+    ]
+  }
+}
