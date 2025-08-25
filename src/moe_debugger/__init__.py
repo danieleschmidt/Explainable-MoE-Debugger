@@ -135,3 +135,83 @@ try:
     ])
 except ImportError:
     pass
+
+# Progressive Quality Gates - Advanced Features
+try:
+    from .ai_threat_detection import (
+        AIThreatDetectionSystem, ThreatLevel, ThreatCategory,
+        get_threat_detection_system, analyze_security_threat,
+        start_threat_monitoring, stop_threat_monitoring
+    )
+    __all__.extend([
+        "AIThreatDetectionSystem", "ThreatLevel", "ThreatCategory",
+        "get_threat_detection_system", "analyze_security_threat",
+        "start_threat_monitoring", "stop_threat_monitoring"
+    ])
+except ImportError:
+    pass
+
+try:
+    from .quantum_performance_optimization import (
+        QuantumPerformanceOptimizer, OptimizationStrategy, WorkloadType,
+        get_performance_optimizer, start_quantum_optimization, stop_quantum_optimization
+    )
+    __all__.extend([
+        "QuantumPerformanceOptimizer", "OptimizationStrategy", "WorkloadType",
+        "get_performance_optimizer", "start_quantum_optimization", "stop_quantum_optimization"
+    ])
+except ImportError:
+    pass
+
+try:
+    from .chaos_engineering import (
+        ChaosEngineeringOrchestrator, ChaosExperimentType, BlastRadiusLevel,
+        get_chaos_orchestrator, start_chaos_engineering, stop_chaos_engineering
+    )
+    __all__.extend([
+        "ChaosEngineeringOrchestrator", "ChaosExperimentType", "BlastRadiusLevel", 
+        "get_chaos_orchestrator", "start_chaos_engineering", "stop_chaos_engineering"
+    ])
+except ImportError:
+    pass
+
+try:
+    from .advanced_observability import (
+        AdvancedObservabilitySystem, AlertSeverity, InsightCategory,
+        get_observability_system, start_observability_monitoring, stop_observability_monitoring
+    )
+    __all__.extend([
+        "AdvancedObservabilitySystem", "AlertSeverity", "InsightCategory",
+        "get_observability_system", "start_observability_monitoring", "stop_observability_monitoring"
+    ])
+except ImportError:
+    pass
+
+try:
+    from .enterprise_governance import (
+        EnterpriseGovernanceSystem, ComplianceFramework, PolicyType,
+        get_governance_system, start_enterprise_governance, stop_enterprise_governance
+    )
+    __all__.extend([
+        "EnterpriseGovernanceSystem", "ComplianceFramework", "PolicyType",
+        "get_governance_system", "start_enterprise_governance", "stop_enterprise_governance"
+    ])
+except ImportError:
+    pass
+
+# Progressive Quality Gates Orchestrator
+try:
+    from .progressive_quality_orchestrator import (
+        ProgressiveQualityOrchestrator, QualityGateStatus, QualityGateConfiguration,
+        get_progressive_quality_orchestrator, initialize_progressive_quality_gates,
+        shutdown_progressive_quality_gates, get_progressive_quality_status,
+        run_progressive_quality_assessment
+    )
+    __all__.extend([
+        "ProgressiveQualityOrchestrator", "QualityGateStatus", "QualityGateConfiguration",
+        "get_progressive_quality_orchestrator", "initialize_progressive_quality_gates", 
+        "shutdown_progressive_quality_gates", "get_progressive_quality_status",
+        "run_progressive_quality_assessment"
+    ])
+except ImportError:
+    pass
