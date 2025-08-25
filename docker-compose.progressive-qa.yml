@@ -18,6 +18,17 @@ services:
       - MOE_DEBUG_HOST=0.0.0.0
       - ASYNC_WORKERS=4
       - BATCH_SIZE=1000
+      # Progressive Quality Gates v2.0 Configuration
+      - PROGRESSIVE_QUALITY_GATES_ENABLED=true
+      - THREAT_DETECTION_ENABLED=true
+      - PERFORMANCE_OPTIMIZATION_ENABLED=true
+      - CHAOS_ENGINEERING_ENABLED=true
+      - OBSERVABILITY_ENABLED=true
+      - GOVERNANCE_ENABLED=true
+      - RECOVERY_SYSTEM_ENABLED=true
+      - SECURITY_MONITORING_LEVEL=high
+      - COMPLIANCE_ENFORCEMENT_LEVEL=strict
+      - AUTOMATED_INCIDENT_RESPONSE=true
       - REDIS_URL=redis://redis:6379
       - ENABLE_DISTRIBUTED_CACHE=true
       - ENABLE_AUTH=false
