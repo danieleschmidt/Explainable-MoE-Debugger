@@ -8,6 +8,7 @@ Research Contributions:
 2. Dead Expert Resurrection Framework (DERF) - automatically revives unused experts
 3. Predictive Load Balancing (PLB) - forecasts and prevents load imbalances
 4. Multi-objective Routing Optimization (MRO) - balances multiple objectives simultaneously
+5. Information Bottleneck MoE Routing (IBMR) - BREAKTHROUGH: applies information theory for optimal routing
 
 Authors: Terragon Labs Research Team
 License: MIT (with research attribution)
@@ -87,6 +88,13 @@ class AdaptiveRoutingConfig:
     enable_real_time_adaptation: bool = True
     adaptation_interval: float = 0.1  # seconds
     history_length: int = 1000
+    
+    # Information Bottleneck Parameters - BREAKTHROUGH RESEARCH
+    information_bottleneck_beta: float = 1.0  # Trade-off between compression and prediction
+    mutual_info_estimation_method: str = 'ksg'  # 'ksg', 'mine', or 'binning'
+    mi_estimation_neighbors: int = 3  # For KSG estimator
+    ib_adaptation_rate: float = 0.005  # Slower adaptation for information measures
+    enable_information_bottleneck: bool = False  # Enable breakthrough IB routing
 
 
 @dataclass
