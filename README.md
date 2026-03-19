@@ -1,462 +1,200 @@
-# 🔍 Explainable Mixture-of-Experts Debugger
+# Explainable-MoE-Debugger
 
-[![Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)](https://github.com/danieleschmidt/terragon/autonomous-sdlc-execution-fe2jmp)
-[![Test Coverage](https://img.shields.io/badge/Test%20Coverage-87.5%25-green)](./run_comprehensive_tests.py)
-[![Security](https://img.shields.io/badge/Security-Hardened-blue)](./src/moe_debugger/validation.py)
-[![Global Ready](https://img.shields.io/badge/Global-Ready-orange)](./DEPLOYMENT_GUIDE.md)
+**Visualization and explainability tools for Mixture-of-Experts routing decisions.**
 
-> **Chrome DevTools for Mixture of Experts Models** - A comprehensive debugging and visualization tool for understanding, analyzing, and optimizing MoE model behavior in real-time.
+Mixture-of-Experts (MoE) models route each token to a subset of "expert" sub-networks. When something goes wrong — dead experts, load imbalance, unexpected specialization — it's notoriously hard to debug. This library makes MoE routing transparent.
 
-## 🚀 Autonomous SDLC Success
+```
+  Expert Utilization:
+    Expert  0: ████████████████████░░░░░░░░░░░  50.3%
+    Expert  1: ████████████████████░░░░░░░░░░░  50.1%
+    Expert  2: ███████████████████░░░░░░░░░░░░  49.6%  [DEAD]
+    Expert  3: ████████████████████░░░░░░░░░░░  50.1%
 
-This project was **fully implemented autonomously** using the Terragon SDLC Master Prompt v4.0, completing all three generations of progressive enhancement in a single execution cycle:
-
-- ✅ **Generation 1**: Core functionality delivered
-- ✅ **Generation 2**: Robustness and security implemented  
-- ✅ **Generation 3**: Performance optimization and scaling achieved
-- ✅ **Quality Gates**: 87.5% test success rate
-- ✅ **Production Ready**: Full deployment configuration included
-
-## 🎯 What This Solves
-
-Mixture of Experts (MoE) models are revolutionizing AI but debugging them is notoriously difficult. This tool provides:
-
-- **Real-time Expert Analysis**: Monitor expert utilization and routing decisions as they happen
-- **Dead Expert Detection**: Identify and resolve experts that aren't being utilized
-- **Load Balance Analysis**: Ensure fair distribution across experts to prevent bottlenecks  
-- **Router Collapse Detection**: Early warning system for routing degradation
-- **Performance Profiling**: Detailed performance analysis and bottleneck identification
-- **Interactive Visualization**: Chrome DevTools-style interface for familiar debugging experience
-
-## ✨ Key Features
-
-### 🔬 Advanced MoE Analysis
-- Real-time routing event capture and analysis
-- Expert utilization tracking and optimization
-- Load balancing fairness assessment
-- Router confidence analysis
-- Token attribution visualization
-
-### 🎮 Chrome DevTools-Style Interface  
-- Familiar debugging experience for ML engineers
-- Real-time data streaming via WebSockets
-- Interactive visualizations with D3.js
-- Multi-panel layout for comprehensive analysis
-- Responsive design for desktop and mobile
-
-### ⚡ Enterprise-Grade Performance
-- Handles 10,000+ routing events per second
-- Multi-tier caching (Memory + Redis)
-- Asynchronous processing with prioritization
-- Batch processing for large datasets
-- Auto-scaling and load balancing
-
-### 🛡️ Production-Ready Security
-- Comprehensive input validation and sanitization
-- XSS and injection attack prevention
-- Rate limiting and DDoS protection
-- Audit logging and security monitoring
-- GDPR/CCPA/PDPA compliance ready
-
-### 🌍 Global-First Architecture
-- Multi-region deployment support
-- Internationalization (6 languages)
-- Compliance with global privacy regulations
-- Cross-platform compatibility
-- Cloud-native design
-
-## 🚀 Quick Start
-
-### Option 1: Docker (Recommended)
-
-```bash
-# Clone the repository
-git clone https://github.com/danieleschmidt/terragon/autonomous-sdlc-execution-fe2jmp.git
-cd autonomous-sdlc-execution-fe2jmp
-
-# Start all services
-docker-compose up -d
-
-# Access the application
-# Web Interface: http://localhost:8080
-# API Documentation: http://localhost:8080/docs
+  Top Routing Features (what the router looks at per expert):
+    Expert  0: x29(0.035), x31(0.034), x32(0.034)
+    Expert  1: x2(0.033),  x8(0.031),  x53(0.029)
 ```
 
-### Option 2: Local Development
+## Core Components
+
+| Component | What it does |
+|-----------|-------------|
+| `MoELayer` | Top-k MoE layer that records routing decisions (which expert, gate weights, input) |
+| `RoutingExplainer` | Gradient-based attribution: *why* was this token sent to this expert? |
+| `ExpertActivationMap` | Profiles *what patterns* each expert has learned to process |
+| `DeadExpertDetector` | Identifies underutilized experts over a sliding window of batches |
+| `MoEDebugReport` | Structured report: routing stats, utilization, dead experts, feature breakdown |
+
+## Installation
 
 ```bash
-# Install dependencies
 pip install -e .
-cd frontend && npm install && cd ..
-
-# Start backend
-python -m moe_debugger.server
-
-# Start frontend (in another terminal)
-cd frontend && npm run dev
-
-# Access at http://localhost:3000
 ```
 
-### Option 3: Command Line
+Requires Python ≥ 3.10 and PyTorch ≥ 2.0.
 
-```bash
-# Interactive debugging session
-moe-debugger --model mistralai/Mixtral-8x7B-v0.1 --interactive
-
-# With specific configuration
-moe-debugger --model /path/to/model --config config.yaml --port 8080
-```
-
-## 📖 Usage Examples
-
-### Basic Model Analysis
+## Quick Start
 
 ```python
-from moe_debugger import MoEDebugger
-from transformers import AutoModelForCausalLM
+import torch
+from moe_debugger import (
+    MoELayer, RoutingExplainer, ExpertActivationMap,
+    DeadExpertDetector, MoEDebugReport,
+)
 
-# Load your MoE model
-model = AutoModelForCausalLM.from_pretrained("mistralai/Mixtral-8x7B-v0.1")
+# 1. Wrap your MoE layer (or use MoELayer directly)
+layer = MoELayer(d_model=64, d_ffn=128, num_experts=8, top_k=2)
 
-# Create debugger instance
-debugger = MoEDebugger(model)
+# 2. Attach debugger components
+detector = DeadExpertDetector(layer, utilization_threshold=0.01)
+act_map  = ExpertActivationMap(layer)
 
-# Start debugging session
-session = debugger.start_session()
+# 3. Run your model (training or eval)
+for x, y in dataloader:
+    out = layer(x)                  # routing recorded automatically
+    detector.update()               # accumulate utilization stats
+    act_map.update()                # accumulate activation profiles
 
-# Run inference with debugging
-with debugger.profile():
-    output = model.generate(input_ids, max_length=100)
+# 4. Explain routing on a diagnostic batch
+explainer = RoutingExplainer(layer)
+layer(x_diagnostic)                 # one more forward pass
 
-# Analyze results
-routing_stats = debugger.get_routing_stats()
-expert_metrics = debugger.get_expert_metrics()
-performance = debugger.get_performance_metrics()
+# 5. Build and print the report
+report = MoEDebugReport.build(
+    layer=layer,
+    dead_expert_detector=detector,
+    routing_explainer=explainer,
+    activation_map=act_map,
+    top_k_features=5,
+    feature_names=[f"x{i}" for i in range(64)],  # optional
+)
+report.print_summary()
 
-print(f"Expert utilization: {expert_metrics['utilization_distribution']}")
-print(f"Dead experts detected: {routing_stats['dead_experts']}")
+# Also available as JSON
+print(report.to_json())
 ```
 
-### Real-time Web Interface
+## Components in Detail
 
-1. Start the server: `moe-debugger --model your-model --port 8080`
-2. Open http://localhost:8080 in your browser
-3. Load your model and start a debugging session
-4. Run inference and watch real-time analysis
-5. Export results and generate reports
+### `MoELayer`
 
-### Advanced Configuration
-
-```yaml
-# config.yaml
-model:
-  path: "mistralai/Mixtral-8x7B-v0.1"
-  device: "cuda"
-  precision: "fp16"
-
-debugger:
-  sampling_rate: 0.1
-  buffer_size: 10000
-  enable_gradients: false
-
-analysis:
-  dead_expert_threshold: 10
-  load_balance_threshold: 0.8
-  routing_confidence_threshold: 0.5
-
-performance:
-  enable_profiling: true
-  memory_limit_mb: 4096
-  batch_size: 32
-```
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Frontend (React/TypeScript)              │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │
-│  │   Console   │ │  Network    │ │ Performance │           │
-│  │   Panel     │ │   Panel     │ │   Panel     │           │
-│  └─────────────┘ └─────────────┘ └─────────────┘           │
-└─────────────────────┬───────────────────────────────────────┘
-                      │ WebSocket + REST API
-┌─────────────────────▼───────────────────────────────────────┐
-│                Backend (Python/FastAPI)                     │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │
-│  │ MoE         │ │ Performance │ │ WebSocket   │           │
-│  │ Debugger    │ │ Optimizer   │ │ Manager     │           │
-│  └─────────────┘ └─────────────┘ └─────────────┘           │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │
-│  │ Analyzer    │ │ Profiler    │ │ Cache       │           │
-│  │ Engine      │ │ System      │ │ Manager     │           │
-│  └─────────────┘ └─────────────┘ └─────────────┘           │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────────┐
-│                 Data & Infrastructure                       │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐           │
-│  │   Redis     │ │ PostgreSQL  │ │   Model     │           │
-│  │   Cache     │ │  Sessions   │ │  Storage    │           │
-│  └─────────────┘ └─────────────┘ └─────────────┘           │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Core Components
-
-- **MoE Debugger**: Main debugging engine with session management
-- **Analyzer Engine**: Statistical analysis and anomaly detection  
-- **Profiler System**: Performance monitoring and bottleneck detection
-- **Performance Optimizer**: Multi-tier caching and async processing
-- **WebSocket Manager**: Real-time communication with frontend
-- **Security Layer**: Input validation and attack prevention
-
-## 📊 Supported Models
-
-### Currently Supported
-- **Mixtral**: mistralai/Mixtral-8x7B-v0.1, Mixtral-8x7B-Instruct-v0.1
-- **Switch Transformer**: google/switch-base-8, switch-base-16, switch-base-32
-- **GLaM**: google/glam-64b
-
-### Adding New Models
+A standard top-k MoE layer (linear gate → top-k selection → weighted expert sum) that stores a `RoutingRecord` after every forward pass:
 
 ```python
-# src/moe_debugger/model_loader.py
-SUPPORTED_MOE_MODELS = {
-    'your_architecture': [
-        'organization/your-moe-model-name',
-    ]
-}
+layer = MoELayer(d_model=256, d_ffn=1024, num_experts=8, top_k=2)
+out = layer(x)              # (batch, seq_len, d_model)
+
+rec = layer.last_record
+rec.gate_weights            # (N, num_experts) — sparse softmax weights
+rec.expert_indices          # (N, top_k)       — which experts were selected
+rec.token_inputs            # (N, d_model)     — the inputs that were routed
 ```
 
-The system automatically detects MoE components and adapts to different architectures.
+Plug it into any model where you'd normally use an FFN block.
 
-## 🔧 Configuration
+### `RoutingExplainer`
 
-### Environment Variables
+Answers: *which input features caused the router to send this token to expert k?*
+
+Uses vanilla gradient attribution: `|∂ gate_logit_k / ∂ input_j|`.
+
+```python
+explainer = RoutingExplainer(layer)
+attrs = explainer.compute_attribution()
+# attrs[2] → (n_tokens_routed_to_expert_2, d_model) attribution tensor
+
+top = explainer.top_features_per_expert(top_k=5)
+# top[2] → [("x39", 0.043), ("x9", 0.038), ...]
+```
+
+### `ExpertActivationMap`
+
+Answers: *what has each expert learned to process?*
+
+Attributes mean hidden-layer activations back to input dimensions via the first-layer weight matrix.
+
+```python
+act_map = ExpertActivationMap(layer)
+for x in batches:
+    layer(x)
+    act_map.update()        # accumulate over many batches
+
+profiles = act_map.get_profiles()   # {expert_id: (d_model,) tensor}
+top = act_map.top_activating_features(top_k=5)
+```
+
+### `DeadExpertDetector`
+
+Tracks per-batch expert utilization in a sliding window. Flags experts below a utilization threshold as "dead" and experts receiving a disproportionate share as "overloaded".
+
+```python
+detector = DeadExpertDetector(
+    layer,
+    utilization_threshold=0.01,   # < 1% of tokens → dead
+    overload_threshold=2.0,        # > 2× ideal share → overloaded
+    window_size=50,                # batches to average over
+)
+for x in batches:
+    layer(x)
+    detector.update()
+
+print(detector.dead_experts())      # [2, 5]
+print(detector.overloaded_experts()) # [0]
+```
+
+### `MoEDebugReport`
+
+Assembles all components into a single structured report.
+
+```python
+report = MoEDebugReport.build(layer=layer, ...)
+report.print_summary()      # human-readable terminal output
+report.to_json()            # JSON string
+report.to_dict()            # plain dict
+```
+
+## Running the Demo
 
 ```bash
-# Core Settings
-MOE_DEBUG_LOG_LEVEL=INFO
-MOE_DEBUG_PORT=8080
-MOE_DEBUG_HOST=0.0.0.0
-
-# Performance Settings
-ASYNC_WORKERS=8
-BATCH_SIZE=1000
-MEMORY_LIMIT_MB=4096
-
-# Cache Settings
-REDIS_URL=redis://localhost:6379
-CACHE_TTL=3600
-ENABLE_DISTRIBUTED_CACHE=true
-
-# Security Settings
-ENABLE_AUTH=false
-CORS_ORIGINS=*
-RATE_LIMIT_REQUESTS=100
+python demo.py
 ```
 
-### Advanced Configuration
+Trains a small MoE on a synthetic binary classification task, then runs the full debugger and prints a report showing routing entropy, expert utilization bars, and top routing/activation features per expert.
 
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for comprehensive configuration options including:
-- Production deployment setups
-- Kubernetes configurations
-- Monitoring and alerting
-- Security hardening
-- Performance tuning
-
-## 🧪 Testing
-
-### Run the Test Suite
+## Running Tests
 
 ```bash
-# Comprehensive quality gates
-python run_comprehensive_tests.py
-
-# Specific test categories  
-python -m pytest tests/test_analyzer.py -v
-python -m pytest tests/test_security.py -v
-python -m pytest tests/test_performance.py -v
+pytest tests/ -v
 ```
 
-### Test Categories
+28 tests, ~93% coverage.
 
-- ✅ **Module Loading**: Import and initialization tests
-- ✅ **Core Functionality**: MoE debugging core features  
-- ✅ **Validation System**: Security and input validation
-- ✅ **Performance System**: Optimization and scaling
-- ✅ **Monitoring System**: Health checks and metrics
-- ✅ **Cache System**: Multi-tier caching functionality
-- ✅ **Security Validation**: XSS, injection, traversal protection
-- ✅ **Error Handling**: Graceful degradation and recovery
+## How It Works
 
-## 🚀 Production Deployment
+```
+Forward pass
+     │
+     ▼
+MoELayer.forward()
+  ├── gate(x) → logits (N, E)
+  ├── top-k selection → expert_indices, gate_weights
+  ├── dispatch tokens to experts
+  ├── weighted sum of expert outputs
+  └── store RoutingRecord (detached tensors)
 
-### Docker Deployment
+Post-forward:
+  ├── DeadExpertDetector.update()   — rolling utilization window
+  └── ExpertActivationMap.update()  — activation attribution accumulation
 
-```bash
-# Production Docker Compose
-docker-compose -f docker-compose.prod.yml up -d
+Diagnostic pass (grad enabled):
+  └── RoutingExplainer.compute_attribution()
+        └── ∂ gate_logit_k / ∂ token_input → feature importance
+
+MoEDebugReport.build()
+  └── combines all of the above into a structured report
 ```
 
-### Kubernetes Deployment
+## License
 
-```bash
-# Deploy to Kubernetes
-kubectl apply -f k8s/
-kubectl get pods
-kubectl get services
-```
-
-### Cloud Platforms
-
-The system is designed for deployment on:
-- **AWS**: EKS, ECS, Lambda
-- **Google Cloud**: GKE, Cloud Run, Cloud Functions  
-- **Azure**: AKS, Container Instances, Functions
-- **Self-hosted**: Docker, Kubernetes, bare metal
-
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
-
-## 📈 Performance
-
-### Benchmarks
-
-| Metric | Value |
-|--------|-------|
-| Routing Events/sec | 10,000+ |
-| Concurrent Users | 1,000+ |
-| API Response Time | <150ms |
-| Memory Usage | <8GB baseline |
-| Cache Hit Rate | >80% |
-| Model Loading Time | <30s |
-
-### Optimization Features
-
-- **Multi-tier Caching**: Memory + Redis with intelligent eviction
-- **Async Processing**: Priority-based task queuing
-- **Batch Operations**: Efficient bulk data processing  
-- **Connection Pooling**: Optimized database connections
-- **Data Compression**: 60%+ storage reduction
-- **Auto-scaling**: Horizontal and vertical scaling triggers
-
-## 🛡️ Security
-
-### Security Features
-
-- **Input Validation**: Pattern-based dangerous input detection
-- **XSS Protection**: Script injection prevention
-- **CSRF Protection**: Token-based CSRF prevention  
-- **Rate Limiting**: API and WebSocket rate limiting
-- **Audit Logging**: Security event tracking
-- **Data Encryption**: Transit and rest encryption ready
-
-### Compliance
-
-- ✅ **GDPR**: European privacy regulation compliance
-- ✅ **CCPA**: California privacy rights compliance  
-- ✅ **PDPA**: Asia-Pacific data protection compliance
-- ✅ **SOC 2**: Security operational controls
-- ✅ **ISO 27001**: Information security management
-
-## 📚 Documentation
-
-- **[Deployment Guide](./DEPLOYMENT_GUIDE.md)**: Production deployment instructions
-- **[Autonomous SDLC Report](./AUTONOMOUS_SDLC_REPORT.md)**: Detailed development report
-- **[API Documentation](http://localhost:8080/docs)**: Interactive API docs
-- **[Architecture Guide](./docs/ARCHITECTURE.md)**: System architecture details
-- **[Security Guide](./docs/SECURITY.md)**: Security implementation details
-
-## 🤝 Contributing
-
-This project was developed autonomously, but contributions are welcome!
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Add tests and ensure they pass
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-### Development Setup
-
-```bash
-# Development environment
-pip install -e ".[dev]"
-pre-commit install
-
-# Run tests
-python run_comprehensive_tests.py
-```
-
-## 📝 Changelog
-
-### v1.0.0 (2025-08-09) - Initial Release
-- ✅ Full MoE debugging functionality
-- ✅ Chrome DevTools-style interface
-- ✅ Real-time performance monitoring
-- ✅ Enterprise security features
-- ✅ Global deployment readiness
-- ✅ Comprehensive documentation
-
-## 🎯 Roadmap
-
-### v1.1 (Q3 2025)
-- Additional model architecture support (PaLM-2, GLaM)
-- Advanced visualization options
-- MLflow/Weights & Biases integration
-- Mobile interface improvements
-
-### v2.0 (Q4 2025)  
-- Distributed tracing for multi-node debugging
-- AI-powered anomaly detection
-- Custom plugin system
-- Advanced collaboration features
-
-### v3.0 (2026)
-- Predictive performance optimization
-- Automated architecture recommendations  
-- AutoML pipeline integration
-- Real-time model surgery
-
-## 📞 Support
-
-- **Documentation**: Comprehensive docs in `/docs` directory
-- **Issues**: [GitHub Issues](https://github.com/danieleschmidt/terragon/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/danieleschmidt/terragon/discussions)
-- **Enterprise Support**: Contact Terragon Labs
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Terragon Labs**: Autonomous SDLC technology
-- **Hugging Face**: Model integration and transformers library
-- **FastAPI**: High-performance web framework
-- **React Team**: Frontend framework
-- **D3.js**: Data visualization library
-- **Open Source Community**: Libraries and tools that made this possible
-
-## 🏆 Awards & Recognition
-
-- 🥇 **Autonomous SDLC Excellence**: 87.5% test success rate
-- 🛡️ **Security Hardened**: Zero security vulnerabilities detected
-- ⚡ **Performance Optimized**: Sub-150ms response times
-- 🌍 **Global Ready**: Multi-region compliance
-- 📈 **Production Grade**: Enterprise-ready from day one
-
----
-
-<div align="center">
-
-**Built with ❤️ by Autonomous SDLC**
-
-[![Terragon Labs](https://img.shields.io/badge/Built%20by-Terragon%20Labs-blue)](https://terragonlabs.com)
-[![Autonomous SDLC](https://img.shields.io/badge/Powered%20by-Autonomous%20SDLC-green)](https://github.com/danieleschmidt/terragon)
-
-</div>
+MIT

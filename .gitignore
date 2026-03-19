@@ -282,3 +282,9 @@ coverage/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Generated
+htmlcov/
+coverage.xml
+.coverage
+*.egg-info/
